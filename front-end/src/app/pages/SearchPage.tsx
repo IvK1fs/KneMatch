@@ -7,7 +7,7 @@ import { Badge } from '../components/ui/badge';
 import { Slider } from '../components/ui/slider';
 import { useTranslation } from 'react-i18next';
 import { searchTitles, Title } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w300';
 
@@ -38,7 +38,7 @@ const allMovies: Movie[] = [
 
 export function SearchPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState(t('genres.all'));
@@ -79,7 +79,7 @@ export function SearchPage() {
   // RF09 — Navega para detalhes ao clicar num card real
   function handleResultClick(item: Title) {
     const type = item.media_type ?? (item.title ? 'movie' : 'tv');
-    navigate(`/details/${item.id}?type=${type}`);
+    window.location.href = `/details/${item.id}?type=${type}`;
   }
 
   // Filtragem e ordenação dos mockados
