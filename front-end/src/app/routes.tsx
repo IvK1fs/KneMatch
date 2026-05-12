@@ -5,7 +5,6 @@ import { UpcomingPage } from './pages/UpcomingPage';
 import { UpcomingShowcasePage } from './pages/UpcomingShowcasePage';
 import { TopTenPage } from './pages/TopTenPage';
 import { SearchPage } from './pages/SearchPage';
-import DetailsPage from './pages/DetailsPage';
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +16,6 @@ export const router = createBrowserRouter([
       { path: 'upcoming-showcase', Component: UpcomingShowcasePage },
       { path: 'top-10', Component: TopTenPage },
       { path: 'search', Component: SearchPage },
-      { path: 'details/:id', Component: DetailsPage }, // RF11 — Lucas
     ],
   },
 ]);
