@@ -13,8 +13,10 @@ const fetchFromTMDB = async (url, res) => {
     });
     return response.data;
   } catch (error) {
-    console.error('TMDB API Error:', error.message);
-    res.status(502).json({ error: 'Falha ao buscar dados' });
+    console.error('Erro TMDB:', error.message);
+    if (res && !res.headersSent) {
+      res.status(502).json({ error: 'Falha ao buscar dados' });
+    }
     return null;
   }
 };
