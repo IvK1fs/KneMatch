@@ -4,12 +4,13 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Copia arquivos de dependência
+
 COPY package*.json ./
 
-# Instala todas as dependências (incluindo devDependencies)
+# Instala todas as dependências
 RUN npm ci
 
-# Copia o código fonte
+# Copia o código fonte (agora tudo está no /app)
 COPY . .
 
 # Estágio 2: Produção
@@ -17,27 +18,28 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Instala curl para health check (opcional)
+# Instala curl para health check
 RUN apk add --no-cache curl
 
-# Copia apenas o necessário do estágio de build
+# Copia node_modules do builder
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/src ./src
+
+# Copia os arquivos necessários (corrigido!)
+COPY --from=builder /app/index.js ./
+COPY --from=builder /app/controllers ./controllers
+COPY --from=builder /app/routes ./routes
+
+# Copia package.json (opcional)
 COPY --from=builder /app/package*.json ./
 
-# Cria usuário não-root para segurança
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Expõe a porta  
 
-# Muda para o usuário não-root
-USER nodejs
 
-# Expõe a porta
 EXPOSE 3001
 
-# Health check para o Railway saber que o app está vivo
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3001/health || exit 1
 
-# Inicia a aplicação
-CMD ["node", "src/index.js"]
+# Comando corrigido
+CMD ["node", "index.js"]
