@@ -1,157 +1,207 @@
-import { FeaturedUpcoming } from '../components/FeaturedUpcoming';
-import { FilterBar } from '../components/FilterBar';
-import { UpcomingCard } from '../components/UpcomingCard';
-import { TimelineSection } from '../components/TimelineSection';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+// src/app/pages/UpcomingPage.tsx  –  CineMatch  |  Sprint 1  |  RF27
+//
+// Página de Próximos Lançamentos.
+// Conectada a getUpcoming() de src/services/api.ts — sem dados hardcoded.
 
-const featuredRelease = {
-  title: 'Ecos do Futuro',
-  image: 'https://images.unsplash.com/photo-1762356121454-877acbd554bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1cGNvbWluZyUyMG1vdmllJTIwcHJlbWllcmV8ZW58MXx8fHwxNzc0OTk1NDg4fDA&ixlib=rb-4.1.0&q=80&w=1080',
-  releaseDate: '2026-04-15',
-  description: 'Uma jornada épica através do tempo e espaço que desafia os limites da realidade. Prepare-se para uma experiência cinematográfica inesquecível.',
-  genre: 'Ficção Científica',
-};
+import { useState, useEffect } from "react";
+import { getUpcoming, type Title } from "../../services/api";
 
-const upcomingReleases = [
-  {
-    title: 'A Última Fronteira',
-    image: 'https://images.unsplash.com/photo-1717903775083-8ad2a38483a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuZXclMjBmaWxtJTIwcmVsZWFzZXxlbnwxfHx8fDE3NzQ5OTU0ODh8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    releaseDate: '2026-04-08',
-    genre: 'Ação',
-    type: 'movie' as const,
-    rating: 8.7,
-    description: 'Um grupo de exploradores embarca em uma missão perigosa para salvar a humanidade. Ação intensa e visuais impressionantes aguardam nesta aventura épica.',
-  },
-  {
-    title: 'Sombras da Noite',
-    image: 'https://images.unsplash.com/photo-1690650553995-cc5109870e00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxibG9ja2J1c3RlciUyMG1vdmllJTIwcG9zdGVyfGVufDF8fHx8MTc3NDk5NTQ4OXww&ixlib=rb-4.1.0&q=80&w=1080',
-    releaseDate: '2026-04-22',
-    genre: 'Suspense',
-    type: 'series' as const,
-    rating: 9.1,
-    description: 'Uma série original que explora os mistérios mais sombrios da mente humana. Cada episódio traz uma nova reviravolta que vai te deixar sem fôlego.',
-  },
-  {
-    title: 'Horizonte Perdido',
-    image: 'https://images.unsplash.com/photo-1762417420551-2fec32ed3595?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaW5lbWElMjBwcmVtaWVyZSUyMGV2ZW50fGVufDF8fHx8MTc3NDk5NTQ4OXww&ixlib=rb-4.1.0&q=80&w=1080',
-    releaseDate: '2026-05-01',
-    genre: 'Drama',
-    type: 'movie' as const,
-    rating: 8.9,
-    description: 'Uma história emocionante sobre amor, perda e redenção. Atuações premiadas e uma narrativa envolvente que toca o coração.',
-  },
-  {
-    title: 'Crônicas Galácticas',
-    image: 'https://images.unsplash.com/photo-1586606806753-4be049463bf6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0diUyMHNob3clMjBwcmVtaWVyZXxlbnwxfHx8fDE3NzQ5OTU0ODl8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    releaseDate: '2026-05-15',
-    genre: 'Ficção Científica',
-    type: 'series' as const,
-    rating: 9.3,
-    description: 'A mais ambiciosa série de ficção científica já produzida. Efeitos visuais de última geração e uma história que redefine o gênero.',
-  },
-  {
-    title: 'Risadas e Lágrimas',
-    image: 'https://images.unsplash.com/photo-1688678004647-945d5aaf91c1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3ZpZSUyMHRoZWF0ZXIlMjBzY3JlZW58ZW58MXx8fHwxNzc0OTk1NDg5fDA&ixlib=rb-4.1.0&q=80&w=1080',
-    releaseDate: '2026-06-01',
-    genre: 'Comédia Dramática',
-    type: 'movie' as const,
-    rating: 8.4,
-    description: 'Uma comédia comovente que equilibra perfeitamente humor e emoção. Uma celebração da vida e das relações humanas.',
-  },
-  {
-    title: 'O Enigma Final',
-    image: 'https://images.unsplash.com/photo-1612544409025-e1f6a56c1152?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaWxtJTIwcHJvZHVjdGlvbiUyMHNldHxlbnwxfHx8fDE3NzQ5OTU0OTB8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    releaseDate: '2026-06-15',
-    genre: 'Mistério',
-    type: 'series' as const,
-    rating: 9.0,
-    description: 'Um thriller psicológico que desafia sua percepção da realidade. Prepare-se para questionar tudo que você pensava saber.',
-  },
-];
+const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 
-const aprilReleases = [
-  {
-    date: '2026-04-05',
-    title: 'Cidade dos Sonhos',
-    type: 'movie' as const,
-    image: 'https://images.unsplash.com/photo-1609741199878-3e8ebdb1dbc7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob2xseXdvb2QlMjBwcmVtaWVyZXxlbnwxfHx8fDE3NzQ5OTU0OTB8MA&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    date: '2026-04-08',
-    title: 'A Última Fronteira',
-    type: 'movie' as const,
-    image: 'https://images.unsplash.com/photo-1717903775083-8ad2a38483a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuZXclMjBmaWxtJTIwcmVsZWFzZXxlbnwxfHx8fDE3NzQ5OTU0ODh8MA&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    date: '2026-04-15',
-    title: 'Ecos do Futuro',
-    type: 'movie' as const,
-    image: 'https://images.unsplash.com/photo-1762356121454-877acbd554bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1cGNvbWluZyUyMG1vdmllJTIwcHJlbWllcmV8ZW58MXx8fHwxNzc0OTk1NDg4fDA&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    date: '2026-04-22',
-    title: 'Sombras da Noite',
-    type: 'series' as const,
-    image: 'https://images.unsplash.com/photo-1690650553995-cc5109870e00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxibG9ja2J1c3RlciUyMG1vdmllJTIwcG9zdGVyfGVufDF8fHx8MTc3NDk5NTQ4OXww&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const mayReleases = [
-  {
-    date: '2026-05-01',
-    title: 'Horizonte Perdido',
-    type: 'movie' as const,
-    image: 'https://images.unsplash.com/photo-1762417420551-2fec32ed3595?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaW5lbWElMjBwcmVtaWVyZSUyMGV2ZW50fGVufDF8fHx8MTc3NDk5NTQ4OXww&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    date: '2026-05-15',
-    title: 'Crônicas Galácticas',
-    type: 'series' as const,
-    image: 'https://images.unsplash.com/photo-1586606806753-4be049463bf6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0diUyMHNob3clMjBwcmVtaWVyZXxlbnwxfHx8fDE3NzQ5OTU0ODl8MA&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    date: '2026-05-20',
-    title: 'Aventuras Urbanas',
-    type: 'movie' as const,
-    image: 'https://images.unsplash.com/photo-1612544409025-e1f6a56c1152?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaWxtJTIwcHJvZHVjdGlvbiUyMHNldHxlbnwxfHx8fDE3NzQ5OTU0OTB8MA&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-];
+function formatarData(iso: string): string {
+  const date = new Date(iso + "T00:00:00");
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit", month: "long", year: "numeric",
+  });
+}
 
-export function UpcomingPage() {
+function diasAte(iso: string): number {
+  const lancamento = new Date(iso + "T00:00:00");
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return Math.ceil((lancamento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function BadgeContagem({ releaseDate }: { releaseDate: string }) {
+  const dias = diasAte(releaseDate);
+  if (dias < 0)   return <span style={badgeStyle("#BDD7EE", "#1F4E79")}>Lançado</span>;
+  if (dias === 0) return <span style={badgeStyle("#4472C4", "#fff")}>Hoje!</span>;
+  return <span style={badgeStyle("#EBF3FB", "#4472C4")}>em {dias} dia{dias !== 1 ? "s" : ""}</span>;
+}
+
+function badgeStyle(bg: string, color: string): React.CSSProperties {
+  return {
+    background: bg, color, borderRadius: 20,
+    padding: "3px 12px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
+  };
+}
+
+function Spinner() {
   return (
-    <div className="pt-[73px]">
-      <FeaturedUpcoming {...featuredRelease} />
-      
-      <FilterBar />
+    <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
+      <div style={{
+        width: 40, height: 40,
+        border: "3px solid #BDD7EE",
+        borderTopColor: "#4472C4",
+        borderRadius: "50%",
+        animation: "spin 0.8s linear infinite",
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
-      <div className="bg-gradient-to-b from-black to-gray-900 py-12">
-        <div className="container mx-auto px-4">
-          <Tabs defaultValue="grid" className="w-full">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl text-white">Próximos Lançamentos</h2>
-              <TabsList className="bg-black/50 border border-white/10">
-                <TabsTrigger value="grid" className="data-[state=active]:bg-blue-600">
-                  Grade
-                </TabsTrigger>
-                <TabsTrigger value="timeline" className="data-[state=active]:bg-blue-600">
-                  Calendário
-                </TabsTrigger>
-              </TabsList>
-            </div>
+// ─── Card ─────────────────────────────────────────────────────────────────────
 
-            <TabsContent value="grid" className="space-y-6">
-              {upcomingReleases.map((release, index) => (
-                <UpcomingCard key={index} {...release} />
-              ))}
-            </TabsContent>
+function UpcomingCard({ item }: { item: Title }) {
+  const title       = item.title ?? item.name ?? "Sem título";
+  const releaseDate = item.release_date ?? item.first_air_date ?? "";
+  const poster      = item.poster_path
+    ? `${TMDB_IMAGE_BASE}${item.poster_path}`
+    : `https://placehold.co/90x135/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
 
-            <TabsContent value="timeline" className="space-y-8">
-              <TimelineSection month="Abril 2026" items={aprilReleases} />
-              <TimelineSection month="Maio 2026" items={mayReleases} />
-            </TabsContent>
-          </Tabs>
+  return (
+    <div style={{
+      display: "flex", gap: 16,
+      background: "#fff", borderRadius: 10,
+      boxShadow: "0 2px 8px rgba(68,114,196,0.10)",
+      padding: 16, alignItems: "flex-start",
+    }}>
+      <img
+        src={poster}
+        alt={title}
+        style={{ width: 90, height: 135, objectFit: "cover", borderRadius: 6, flexShrink: 0 }}
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).src =
+            `https://placehold.co/90x135/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
+        }}
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "#1F4E79" }}>{title}</h3>
+          {releaseDate && <BadgeContagem releaseDate={releaseDate} />}
         </div>
+        {releaseDate && (
+          <p style={{ margin: "0 0 8px", fontSize: 12, color: "#888" }}>
+            🗓️ {formatarData(releaseDate)}
+          </p>
+        )}
+        <p style={{ margin: 0, fontSize: 13, color: "#888" }}>
+          ★ {item.vote_average.toFixed(1)}
+        </p>
       </div>
+    </div>
+  );
+}
+
+// ─── Página principal ─────────────────────────────────────────────────────────
+
+export default function UpcomingPage() {
+  const [filmes,  setFilmes]  = useState<Title[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [erro,    setErro]    = useState(false);
+  const [ordenar, setOrdenar] = useState<"data" | "titulo">("data");
+
+  useEffect(() => {
+    async function carregar() {
+      setLoading(true);
+      setErro(false);
+      try {
+        const data = await getUpcoming(); // ← vem do src/services/api.ts
+        setFilmes(data.results);
+      } catch (err) {
+        console.error("[UpcomingPage] getUpcoming falhou:", err);
+        setErro(true);
+      } finally {
+        setLoading(false);
+      }
+    }
+    carregar();
+  }, []);
+
+  const ordenados = [...filmes].sort((a, b) => {
+    if (ordenar === "data") {
+      const da = a.release_date ?? a.first_air_date ?? "";
+      const db = b.release_date ?? b.first_air_date ?? "";
+      return da.localeCompare(db);
+    }
+    const ta = a.title ?? a.name ?? "";
+    const tb = b.title ?? b.name ?? "";
+    return ta.localeCompare(tb);
+  });
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#F0F4FA", fontFamily: "Segoe UI, sans-serif" }}>
+
+      <main style={{ maxWidth: 860, margin: "0 auto", padding: "24px 16px" }}>
+
+        {/* Título */}
+        <div style={{ marginBottom: 24 }}>
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#1F4E79" }}>
+            🗓️ Lançamentos Futuros
+          </h2>
+          <p style={{ margin: "4px 0 0", fontSize: 14, color: "#666" }}>
+            Filmes confirmados para os próximos meses
+          </p>
+        </div>
+
+        {/* Ordenação */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 20, alignItems: "center" }}>
+          <span style={{ fontSize: 13, color: "#666" }}>Ordenar por:</span>
+          {(["data", "titulo"] as const).map((op) => (
+            <button
+              key={op}
+              onClick={() => setOrdenar(op)}
+              style={{
+                padding: "6px 16px", borderRadius: 6, cursor: "pointer",
+                border: "2px solid #4472C4", fontSize: 12, fontWeight: 700,
+                background: ordenar === op ? "#4472C4" : "transparent",
+                color:      ordenar === op ? "#fff" : "#4472C4",
+              }}
+            >
+              {op === "data" ? "Data" : "Título"}
+            </button>
+          ))}
+        </div>
+
+        {/* Conteúdo */}
+        {loading && <Spinner />}
+
+        {erro && (
+          <div style={{
+            background: "#FFF3CD", border: "1px solid #FFCA2C",
+            borderRadius: 8, padding: "12px 16px",
+            display: "flex", alignItems: "center", gap: 12,
+          }}>
+            <span>⚠️</span>
+            <span style={{ flex: 1, fontSize: 14, color: "#664D03" }}>
+              Não foi possível carregar os lançamentos.
+            </span>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: "#4472C4", color: "#fff", border: "none",
+                borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: 13,
+              }}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {!loading && !erro && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {ordenados.map((m) => <UpcomingCard key={m.id} item={m} />)}
+            {ordenados.length === 0 && (
+              <p style={{ textAlign: "center", color: "#888", paddingTop: 32 }}>
+                Nenhum lançamento encontrado.
+              </p>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
