@@ -1,15 +1,16 @@
 // TrendingSection.tsx  –  CineMatch  |  Sprint 1  |  RF26
 //
 // Seção de Trending da Semana para a HomePage.
-// Conectada a fetchTrending() do api.ts.
-// Quando USE_MOCK = false, consome GET /api/trending do David automaticamente.
+// Conectada a getTrending() de src/services/api.ts
 //
 // Uso na HomePage:
-//   import TrendingSection from "./TrendingSection";
+//   import TrendingSection from "../components/TrendingSection";
 //   <TrendingSection darkMode={darkMode} />
 
 import { useState, useEffect, useRef } from "react";
-import { fetchTrending, type TrendingMovie } from "./api";
+import { getTrending, type Title } from "../../services/api";
+
+const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 
 // ─── Utilitários ──────────────────────────────────────────────────────────────
 
@@ -17,7 +18,7 @@ function RankBadge({ rank }: { rank: number }) {
   const top3Colors: Record<number, { bg: string; color: string }> = {
     1: { bg: "#FFD700", color: "#1a1a1a" },
     2: { bg: "#C0C0C0", color: "#1a1a1a" },
-    3: { bg: "#CD7F32", color: "#fff"    },
+    3: { bg: "#CD7F32", color: "#fff" },
   };
   const style = top3Colors[rank] ?? { bg: "#4472C4", color: "#fff" };
 
@@ -32,23 +33,6 @@ function RankBadge({ rank }: { rank: number }) {
       zIndex: 2,
     }}>
       {rank}
-    </div>
-  );
-}
-
-function TrendBar({ score }: { score: number }) {
-  // score vai de 0 a 100 — barra de popularidade relativa
-  return (
-    <div style={{ marginTop: 6 }}>
-      <div style={{
-        height: 3, background: "#e0e0e0", borderRadius: 2, overflow: "hidden",
-      }}>
-        <div style={{
-          height: "100%", width: `${score}%`,
-          background: "linear-gradient(90deg, #4472C4, #7FB3E8)",
-          borderRadius: 2, transition: "width 0.6s ease",
-        }} />
-      </div>
     </div>
   );
 }
@@ -71,15 +55,23 @@ function Spinner() {
 // ─── Card de trending ─────────────────────────────────────────────────────────
 
 function TrendingCard({
-  movie,
+  item,
+  rank,
   darkMode,
 }: {
-  movie: TrendingMovie;
+  item: Title;
+  rank: number;
   darkMode: boolean;
 }) {
   const cardBg   = darkMode ? "#1C2333" : "#FFFFFF";
   const textMain = darkMode ? "#E6EDF3" : "#1F4E79";
   const textSub  = darkMode ? "#8B949E" : "#666";
+
+  const title = item.title ?? item.name ?? "Sem título";
+  const year  = (item.release_date ?? item.first_air_date ?? "").slice(0, 4);
+  const poster = item.poster_path
+    ? `${TMDB_IMAGE_BASE}${item.poster_path}`
+    : `https://placehold.co/160x240/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
 
   return (
     <div
@@ -107,20 +99,20 @@ function TrendingCard({
       {/* Poster */}
       <div style={{ position: "relative" }}>
         <img
-          src={movie.posterUrl}
-          alt={movie.title}
+          src={poster}
+          alt={title}
           style={{
             width: "100%", aspectRatio: "2/3",
             objectFit: "cover", display: "block",
           }}
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src =
-              `https://placehold.co/160x240/BDD7EE/1F4E79?text=${encodeURIComponent(movie.title)}`;
+              `https://placehold.co/160x240/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
           }}
         />
-        <RankBadge rank={movie.weekRank} />
+        <RankBadge rank={rank} />
 
-        {/* Gradiente inferior sobre o poster */}
+        {/* Gradiente inferior */}
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0, height: 60,
           background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
@@ -130,7 +122,7 @@ function TrendingCard({
             background: "rgba(68,114,196,0.9)", color: "#fff",
             borderRadius: 4, padding: "2px 7px", fontSize: 12, fontWeight: 700,
           }}>
-            ★ {movie.rating.toFixed(1)}
+            ★ {item.vote_average.toFixed(1)}
           </span>
         </div>
       </div>
@@ -141,12 +133,11 @@ function TrendingCard({
           margin: 0, fontSize: 13, fontWeight: 700, color: textMain,
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
         }}>
-          {movie.title}
+          {title}
         </h4>
         <p style={{ margin: "3px 0 0", fontSize: 11, color: textSub }}>
-          {movie.year} · {movie.genre[0]}
+          {year}
         </p>
-        <TrendBar score={movie.trendScore} />
       </div>
     </div>
   );
@@ -159,7 +150,7 @@ interface TrendingSectionProps {
 }
 
 export default function TrendingSection({ darkMode }: TrendingSectionProps) {
-  const [movies,  setMovies]  = useState<TrendingMovie[]>([]);
+  const [items,   setItems]   = useState<Title[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -168,10 +159,10 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
     setLoading(true);
     setError(false);
     try {
-      const data = await fetchTrending();
-      setMovies(data);
+      const data = await getTrending();
+      setItems(data.results);
     } catch (err) {
-      console.error("[TrendingSection] fetchTrending failed:", err);
+      console.error("[TrendingSection] getTrending failed:", err);
       setError(true);
     } finally {
       setLoading(false);
@@ -180,7 +171,6 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
 
   useEffect(() => { load(); }, []);
 
-  // ── Scroll do carrossel ──
   function scroll(direction: "left" | "right") {
     const el = scrollRef.current;
     if (!el) return;
@@ -195,7 +185,7 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
   return (
     <section style={{ marginBottom: 40 }}>
 
-      {/* ── Cabeçalho ── */}
+      {/* Cabeçalho */}
       <div style={{
         display: "flex", alignItems: "center",
         justifyContent: "space-between", marginBottom: 16,
@@ -209,7 +199,6 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
           </p>
         </div>
 
-        {/* Controles do carrossel */}
         {!loading && !error && (
           <div style={{ display: "flex", gap: 8 }}>
             {(["left", "right"] as const).map((dir) => (
@@ -241,7 +230,7 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
         )}
       </div>
 
-      {/* ── Conteúdo ── */}
+      {/* Conteúdo */}
       {loading && <Spinner />}
 
       {error && (
@@ -268,7 +257,6 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
 
       {!loading && !error && (
         <>
-          {/* ── Carrossel com scroll-snap ── */}
           <div
             ref={scrollRef}
             style={{
@@ -277,26 +265,22 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
               overflowX: "auto",
               scrollSnapType: "x mandatory",
               paddingBottom: 12,
-              // Esconde scrollbar visualmente mas mantém funcional
               scrollbarWidth: "none",
               msOverflowStyle: "none",
             }}
           >
-            <style>{`
-              .trending-scroll::-webkit-scrollbar { display: none; }
-            `}</style>
-            {movies.map((movie) => (
-              <div key={movie.id} style={{ scrollSnapAlign: "start" }}>
-                <TrendingCard movie={movie} darkMode={darkMode} />
+            <style>{`.trending-scroll::-webkit-scrollbar { display: none; }`}</style>
+            {items.map((item, index) => (
+              <div key={item.id} style={{ scrollSnapAlign: "start" }}>
+                <TrendingCard item={item} rank={index + 1} darkMode={darkMode} />
               </div>
             ))}
           </div>
 
-          {/* ── Indicador de quantidade ── */}
           <p style={{
             margin: "8px 0 0", fontSize: 12, color: mutedColor, textAlign: "right",
           }}>
-            {movies.length} títulos em destaque esta semana
+            {items.length} títulos em destaque esta semana
           </p>
         </>
       )}
