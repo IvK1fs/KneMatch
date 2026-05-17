@@ -18,6 +18,19 @@ app.use(cors({
 
 app.use(express.json());
 
+
+app.get('/', (req, res) => {
+  res.json({
+    message: 'CineMatch API funcionando!',
+    status: 'online',
+    endpoints: {
+      health: '/health',
+      trending: '/api/trending',
+      upcoming: '/api/upcoming',
+      search: '/api/search?q=filme&type=movie'
+    }
+  });
+});
 // Routes
 app.use('/api/search', searchRoutes);
 app.use('/api/trending', trendingRoutes);
