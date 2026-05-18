@@ -32,16 +32,17 @@ export function ContentRow({ title, items }: ContentRowProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 auto-rows-fr">
           {items.map((item) => (
-            <MovieCard
-              key={item.id}
-              title={item.title}
-              image={item.image}
-              rating={item.rating}
-              year={item.year}
-              genre={item.genre}
-            />
+            <div key={item.id} className="h-full">
+              <MovieCard
+                title={item.title}
+                image={item.image}
+                rating={item.rating}
+                year={item.year}
+                genre={item.genre}
+              />
+            </div>
           ))}
         </div>
       </div>
