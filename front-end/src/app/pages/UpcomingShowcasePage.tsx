@@ -96,10 +96,10 @@ const upcomingItems = [
 ];
 
 export function UpcomingShowcasePage() {
-  const [selectedItem, setSelectedItem] = useState<typeof upcomingItems[number] | null>(null);
+  const [selectedItem, setSelectedItem] = useState<typeof upcomingItems[0] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleItemClick = (item: typeof upcomingItems[number]) => {
+  const handleItemClick = (item: typeof upcomingItems[0]) => {
     setSelectedItem(item);
     setIsModalOpen(true);
   };
