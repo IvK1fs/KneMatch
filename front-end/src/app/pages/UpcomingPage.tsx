@@ -98,7 +98,7 @@ function UpcomingCard({ item }: { item: Title }) {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 
-export default function UpcomingPage() {
+export function UpcomingPage() {
   const [filmes,  setFilmes]  = useState<Title[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro,    setErro]    = useState(false);

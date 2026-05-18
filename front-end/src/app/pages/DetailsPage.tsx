@@ -31,7 +31,7 @@ function Poster({ path, title }: { path: string | null; title: string }) {
   );
 }
 
-export default function DetailsPage() {
+export function DetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const type = (searchParams.get("type") as MediaType) ?? "movie";
