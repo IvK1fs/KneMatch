@@ -1,4 +1,4 @@
-const BASE_URL = (import.meta as any).env?.VITE_API_URL ?? "https://cinematch-back-50kd.onrender.com;
+const BASE_URL = (import.meta as any).env?.VITE_API_URL ?? "https://cinematch-back-50kd.onrender.com";
 
 // ─────────────────────────────────────────────
 // TIPOS
