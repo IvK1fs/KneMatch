@@ -63,7 +63,7 @@ export async function searchTitles(query: string, type: MediaType | "" = "") {
 // Mude USAR_MOCK para false quando David mandar a URL do servidor
 // ─────────────────────────────────────────────
 
-const USAR_MOCK = true;
+const USAR_MOCK = false;
 
 const mockDetails: TitleDetails = {
   id: 550,
