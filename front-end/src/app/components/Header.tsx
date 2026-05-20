@@ -28,8 +28,8 @@ export function Header() {
             <Link to="/" className={`${isActive('/')} transition-colors`}>{t('header.home')}</Link>
             <Link to="/upcoming-showcase" className={`${isActive('/upcoming-showcase')} transition-colors`}>{t('header.upcoming')}</Link>
             <Link to="/top-10" className={`${isActive('/top-10')} transition-colors`}>{t('header.ranking')}</Link>
-            <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">{t('header.movies')}</a>
-            <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">{t('header.series')}</a>
+            <Link to="/search?type=movie" className={`${isActive('/search')} transition-colors`}>{t('header.movies')}</Link>
+            <Link to="/search?type=tv" className={`${isActive('/search')} transition-colors`}>{t('header.series')}</Link>
           </nav>
         </div>
 
