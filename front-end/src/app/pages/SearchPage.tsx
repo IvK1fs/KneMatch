@@ -55,6 +55,7 @@ export function SearchPage() {
   const [suggestions, setSuggestions] = useState<Title[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipSearchRef = useRef(false);
 
   useEffect(() => {
     const type = (filters.type || 'movie') as 'movie' | 'tv';
@@ -64,6 +65,10 @@ export function SearchPage() {
   }, [filters.type]);
 
   useEffect(() => {
+    if (skipSearchRef.current) {
+      skipSearchRef.current = false;
+      return;
+    }
     executeSearch(filters);
   }, [filters]);
 
@@ -144,13 +149,22 @@ export function SearchPage() {
     }
 
     debounceRef.current = setTimeout(async () => {
+      setIsLoading(true);
+      setApiError(false);
       try {
         const data = await searchTitles(value);
-        setSuggestions((data.results ?? []).slice(0, 5));
+        const items = data.results ?? [];
+        setSuggestions(items.slice(0, 5));
         setShowSuggestions(true);
+        setResults(items);
       } catch {
         setSuggestions([]);
+        setApiError(true);
+        setResults([]);
+      } finally {
+        setIsLoading(false);
       }
+      skipSearchRef.current = true;
       setFilters((f) => ({ ...f, q: value, page: 1 }));
     }, 300);
   }
