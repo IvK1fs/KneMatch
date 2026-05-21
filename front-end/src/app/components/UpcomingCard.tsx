@@ -62,13 +62,14 @@ export function UpcomingCard({
   return (
     <div className="group relative bg-gray-900 rounded-lg overflow-hidden border border-white/10 hover:border-white/30 transition-all hover:scale-[1.02]">
       <div className="grid md:grid-cols-[300px_1fr] gap-0">
-        {/* Image */}
-        <div className="relative aspect-[2/3] md:aspect-auto overflow-hidden">
-          <img 
-            src={image}
-            alt={title}
-            className="w-full h-full object-cover transition-transform group-hover:scale-110"
-          />
+        // DEPOIS
+<div className="relative overflow-hidden" style={{ width: '100%', maxWidth: '300px', height: '450px', flexShrink: 0 }}>
+  <img 
+    src={image}
+    alt={title}
+    className="w-full h-full object-cover transition-transform group-hover:scale-110"
+    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+  />
           <div className="absolute top-3 left-3 flex gap-2">
             <Badge className={type === 'movie' ? 'bg-blue-600' : 'bg-purple-600'}>
               {type === 'movie' ? 'Filme' : 'Série'}
