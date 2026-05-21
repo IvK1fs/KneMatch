@@ -169,9 +169,9 @@ export function SearchPage() {
       </section>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
+        <div className="flex flex-col md:flex-row gap-8">
           {showFilters && (
-            <aside className="w-80 flex-shrink-0 space-y-6">
+            <aside className="w-full md:w-80 flex-shrink-0 space-y-6">
               <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 border border-gray-300 dark:border-white/10 sticky top-24">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl text-gray-900 dark:text-white">{t('search.filters')}</h2>
