@@ -58,10 +58,19 @@ export function SearchPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const GENRE_FALLBACK: Genre[] = [
+    { id: 28, name: 'Ação' }, { id: 12, name: 'Aventura' },
+    { id: 16, name: 'Animação' }, { id: 35, name: 'Comédia' },
+    { id: 80, name: 'Crime' }, { id: 18, name: 'Drama' },
+    { id: 14, name: 'Fantasia' }, { id: 27, name: 'Terror' },
+    { id: 9648, name: 'Mistério' }, { id: 10749, name: 'Romance' },
+    { id: 878, name: 'Ficção científica' }, { id: 53, name: 'Thriller' },
+  ];
+
   useEffect(() => {
     getGenres('movie')
       .then((data) => setGenres(data.genres))
-      .catch(() => setGenres([]));
+      .catch(() => setGenres(GENRE_FALLBACK));
   }, []);
 
   async function doSearch(query: string) {
@@ -91,13 +100,20 @@ export function SearchPage() {
       return;
     }
     debounceRef.current = setTimeout(async () => {
+      setIsLoading(true);
       try {
         const data = await searchTitles(value);
-        setSuggestions((data.results ?? []).slice(0, 5));
+        const items = data.results ?? [];
+        setSuggestions(items.slice(0, 5));
         setShowSuggestions(true);
+        setResults(items);
+        setHasSearched(true);
+        setApiError(false);
       } catch (err) {
         console.error('[autocomplete] erro:', err);
         setSuggestions([]);
+      } finally {
+        setIsLoading(false);
       }
     }, 300);
   }
