@@ -7,6 +7,7 @@ const trendingRoutes = require('./routes/trending.routes');
 const upcomingRoutes = require('./routes/upcoming.routes');
 const detailsRoutes = require('./routes/details.routes');
 const genresRoutes = require('./routes/genres.routes');
+const discoverRoutes = require('./routes/discover.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -48,6 +49,7 @@ app.use('/api/trending', trendingRoutes);
 app.use('/api/upcoming', upcomingRoutes);
 app.use('/api/details', detailsRoutes);
 app.use('/api/genres', genresRoutes);
+app.use('/api/discover', discoverRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
