@@ -51,6 +51,11 @@ export interface Provider {
   logo_path: string;
 }
 
+export interface Genre {
+  id: number;
+  name: string;
+}
+
 async function fetchAPI<T>(path: string): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`);
   if (!response.ok) {
@@ -146,4 +151,8 @@ export async function getProviders(id: string | number, type: MediaType = "movie
     };
   }
   return fetchAPI(`/api/details/${id}/providers?type=${type}`);
+}
+
+export async function getGenres(type: MediaType): Promise<{ genres: Genre[] }> {
+  return fetchAPI<{ genres: Genre[] }>(`/api/genres?type=${type}`);
 }

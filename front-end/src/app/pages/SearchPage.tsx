@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Search, Filter, X, Star, ArrowUpDown } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../components/ui/badge';
 import { Slider } from '../components/ui/slider';
 import { useTranslation } from 'react-i18next';
-import { searchTitles, Title } from '../../services/api';
+import { searchTitles, getGenres, Title, Genre } from '../../services/api';
 
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w300';
@@ -48,25 +48,29 @@ export function SearchPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [sortBy, setSortBy] = useState('relevance');
 
-  // Estados da API — RF01
   const [results, setResults] = useState<Title[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [apiError, setApiError] = useState(false);
 
-  const genres = [
-    t('genres.all'), t('genres.action'), t('genres.drama'),
-    t('genres.scifi'), t('genres.comedy'), t('genres.romance'), t('genres.suspense'),
-  ];
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [suggestions, setSuggestions] = useState<Title[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // RF01 — Busca real via api.ts
-  const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim()) return;
+  useEffect(() => {
+    getGenres('movie')
+      .then((data) => setGenres(data.genres))
+      .catch(() => setGenres([]));
+  }, []);
+
+  async function doSearch(query: string) {
+    if (!query.trim()) return;
     setIsLoading(true);
     setHasSearched(true);
     setApiError(false);
     try {
-      const data = await searchTitles(searchQuery);
+      const data = await searchTitles(query);
       setResults(data.results ?? []);
     } catch {
       setApiError(true);
@@ -74,7 +78,29 @@ export function SearchPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery]);
+  }
+
+  const handleSearch = useCallback(() => doSearch(searchQuery), [searchQuery]);
+
+  function handleInputChange(value: string) {
+    setSearchQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const data = await searchTitles(value);
+        setSuggestions((data.results ?? []).slice(0, 5));
+        setShowSuggestions(true);
+      } catch (err) {
+        console.error('[autocomplete] erro:', err);
+        setSuggestions([]);
+      }
+    }, 300);
+  }
 
   // RF09 — Navega para detalhes ao clicar num card real
   function handleResultClick(item: Title) {
@@ -134,10 +160,32 @@ export function SearchPage() {
                 type="text"
                 placeholder={t('search.placeholder')}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 className="pl-12 pr-4 py-6 text-lg bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-400 focus:border-red-500"
               />
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-xl mt-1 overflow-hidden">
+                  {suggestions.map((item) => {
+                    const title = item.title ?? item.name ?? '';
+                    const imageUrl = item.poster_path ? `https://image.tmdb.org/t/p/w300${item.poster_path}` : null;
+                    return (
+                      <div
+                        key={item.id}
+                        onMouseDown={() => { setSearchQuery(title); setShowSuggestions(false); doSearch(title); }}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        {imageUrl
+                          ? <img src={imageUrl} alt={title} className="w-8 h-12 object-cover rounded" />
+                          : <div className="w-8 h-12 bg-gray-200 dark:bg-gray-600 rounded" />
+                        }
+                        <span className="text-gray-900 dark:text-white text-sm">{title}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <Button
               onClick={handleSearch}
@@ -184,7 +232,10 @@ export function SearchPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {genres.map((genre) => <SelectItem key={genre} value={genre}>{genre}</SelectItem>)}
+                      <SelectItem value={t('genres.all')}>{t('genres.all')}</SelectItem>
+                      {genres.map((genre) => (
+                        <SelectItem key={genre.id} value={genre.name}>{genre.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
