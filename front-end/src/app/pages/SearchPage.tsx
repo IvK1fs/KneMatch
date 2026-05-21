@@ -311,6 +311,11 @@ export function SearchPage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg text-gray-900 dark:text-white">{t('search.filters')}</h2>
                   {activeFiltersCount > 0 && <Badge className="bg-red-600">{activeFiltersCount} ativos</Badge>}
+            <aside className="w-full md:w-80 flex-shrink-0 space-y-6">
+              <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 border border-gray-300 dark:border-white/10 sticky top-24">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl text-gray-900 dark:text-white">{t('search.filters')}</h2>
+                  {activeFiltersCount > 0 && <Badge className="bg-red-600">{activeFiltersCount} {t('search.activeFilters')}</Badge>}
                 </div>
 
                 {/* RF03 — Gênero */}
