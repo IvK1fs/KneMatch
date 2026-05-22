@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instala todas as dependências
-RUN npm start
+RUN npm ci-only=production
 
 # Copia o código fonte (agora tudo está no /app)
 COPY . .
@@ -42,4 +42,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3001/health || exit 1
 
 # Comando corrigido
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
