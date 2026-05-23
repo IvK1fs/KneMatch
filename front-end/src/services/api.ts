@@ -60,10 +60,10 @@ export async function searchTitles(query: string, type: MediaType | "" = "") {
 
 // ─────────────────────────────────────────────
 // RF12 — Detalhes de um título (Lucas usa)
-// Mude USAR_MOCK para false quando David mandar a URL do servidor
 // ─────────────────────────────────────────────
 
-const USAR_MOCK = true;
+const USAR_MOCK_TRENDING = false;
+const USAR_MOCK_UPCOMING = false;
 
 const mockDetails: TitleDetails = {
   id: 550,
@@ -88,7 +88,7 @@ export async function getDetails(
   id: string | number,
   type: MediaType = "movie"
 ): Promise<TitleDetails> {
-  if (USAR_MOCK) {
+  if (USAR_MOCK_TRENDING) {
     await new Promise((resolve) => setTimeout(resolve, 600));
     return { ...mockDetails, id: Number(id), media_type: type };
   }
@@ -100,6 +100,10 @@ export async function getDetails(
 // ─────────────────────────────────────────────
 
 export async function getTrending() {
+  if (USAR_MOCK_TRENDING) {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    return { results: [] };
+  }
   return fetchAPI<{ results: Title[] }>("/api/trending");
 }
 
@@ -108,5 +112,29 @@ export async function getTrending() {
 // ─────────────────────────────────────────────
 
 export async function getUpcoming() {
+  if (USAR_MOCK_UPCOMING) {
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    return { results: [] };
+  }
   return fetchAPI<{ results: Title[] }>("/api/upcoming");
+}
+
+// ─────────────────────────────────────────────
+// RF28 — Top 10 (Nelson usa)
+// ─────────────────────────────────────────────
+
+export async function getTopTen(type: MediaType | "" = "") {
+  const params = new URLSearchParams();
+  if (type) params.append("type", type);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return fetchAPI<{ results: Title[] }>(`/api/top10${query}`);
+}
+
+// ─────────────────────────────────────────────
+// RF21 — Títulos similares (Nelson usa na DetailsPage)
+// Avisar Lucas antes de mexer na DetailsPage
+// ─────────────────────────────────────────────
+
+export async function getSimilar(id: string | number, type: MediaType = "movie") {
+  return fetchAPI<{ results: Title[] }>(`/api/similar/${id}?type=${type}`);
 }
