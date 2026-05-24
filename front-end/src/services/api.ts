@@ -51,6 +51,11 @@ export interface Provider {
   logo_path: string;
 }
 
+export interface Genre {
+  id: number;
+  name: string;
+}
+
 async function fetchAPI<T>(path: string): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`);
   if (!response.ok) {
@@ -93,8 +98,11 @@ export async function getDetails(id: string | number, type: MediaType = "movie")
   return fetchAPI<TitleDetails>(`/api/details/${id}?type=${type}`);
 }
 
-export async function getTrending(): Promise<{ results: Title[] }> {
-  return fetchAPI<{ results: Title[] }>("/api/trending");
+export async function getTrending(type?: 'movie' | 'tv' | 'all', page = 1): Promise<{ results: Title[] }> {
+  const params = new URLSearchParams();
+  if (type) params.append('type', type);
+  params.append('page', String(page));
+  return fetchAPI<{ results: Title[] }>(`/api/trending?${params.toString()}`);
 }
 
 export async function getUpcoming(): Promise<{ results: Title[] }> {
@@ -146,4 +154,42 @@ export async function getProviders(id: string | number, type: MediaType = "movie
     };
   }
   return fetchAPI(`/api/details/${id}/providers?type=${type}`);
+}
+
+export async function getGenres(type: MediaType): Promise<{ genres: Genre[] }> {
+  return fetchAPI<{ genres: Genre[] }>(`/api/genres?type=${type}`);
+}
+
+export interface DiscoverParams {
+  q?: string;
+  type?: MediaType | '';
+  genre?: string;
+  sort?: string;
+  page?: number;
+  year?: string;
+  rating?: number;
+}
+
+export async function discoverTitles(params: DiscoverParams): Promise<{ results: Title[]; total_pages: number }> {
+  const p = new URLSearchParams();
+  if (params.q) p.append('q', params.q);
+  if (params.type) p.append('type', params.type);
+  if (params.genre) p.append('genre', params.genre);
+  if (params.sort) p.append('sort_by', params.sort);
+  if (params.year) p.append('year', params.year);
+  if (params.rating && params.rating > 0) p.append('vote_average.gte', String(params.rating));
+  if (params.page) p.append('page', String(params.page));
+  return fetchAPI(`/api/discover?${p.toString()}`);
+}
+
+export async function getTopTen(type: MediaType | "" = "") {
+  const params = new URLSearchParams();
+  if (type) params.append("type", type);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return fetchAPI<{ results: Title[] }>(`/api/top10${query}`);
+}
+
+export async function getSimilar(id: string | number, type: MediaType = "movie") {
+  return fetchAPI<{ results: Title[] }>(`/api/similar/${id}?type=${type}`);
+}
 }
