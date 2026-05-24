@@ -181,7 +181,7 @@ export function SearchPage() {
   }
 
   function handleResultClick(item: Title) {
-    const type = item.media_type ?? (item.title ? 'movie' : 'tv');
+    const type = item.media_type ?? (item.first_air_date ? 'tv' : 'movie');
     window.location.href = `/details/${item.id}?type=${type}`;
   }
 
@@ -423,6 +423,9 @@ export function SearchPage() {
                     const year = date ? new Date(date).getFullYear() : '—';
                     const rating = item.vote_average?.toFixed(1) ?? 'N/A';
                     const imageUrl = item.poster_path ? `${TMDB_IMAGE_BASE}${item.poster_path}` : null;
+                    const genreName = item.genre_ids?.[0]
+                      ? genres.find(g => g.id === item.genre_ids[0])?.name ?? ''
+                      : '';
                     return (
                       <div
                         key={item.id}
@@ -444,6 +447,11 @@ export function SearchPage() {
                               <span className="text-gray-900 dark:text-white">{rating}</span>
                             </div>
                           </div>
+                          {genreName && (
+                            <span className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate block">
+                              {genreName}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );
