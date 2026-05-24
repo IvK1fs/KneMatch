@@ -1,1 +1,62 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
 
+const searchRoutes = require('./routes/search.routes');
+const trendingRoutes = require('./routes/trending.routes');
+const upcomingRoutes = require('./routes/upcoming.routes');
+const detailsRoutes = require('./routes/details.routes');
+const genresRoutes = require('./routes/genres.routes');
+const discoverRoutes = require('./routes/discover.routes');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'https://cinematch-3m6l.onrender.com',
+  'http://localhost:3000'
+].filter(Boolean);
+
+
+// CORS configuration
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json());
+
+// ROTA RAIZ (adicione isso!)
+app.get('/', (req, res) => {
+  res.json({
+    message: 'CineMatch API funcionando!',
+    status: 'online'
+  });
+});
+
+// Routes
+app.use('/api/search', searchRoutes);
+app.use('/api/trending', trendingRoutes);
+app.use('/api/upcoming', upcomingRoutes);
+app.use('/api/details', detailsRoutes);
+app.use('/api/genres', genresRoutes);
+app.use('/api/discover', discoverRoutes);
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📡 Frontend allowed: ${process.env.FRONTEND_URL}`);
+});

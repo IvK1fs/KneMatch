@@ -192,3 +192,4 @@ export async function getTopTen(type: MediaType | "" = "") {
 export async function getSimilar(id: string | number, type: MediaType = "movie") {
   return fetchAPI<{ results: Title[] }>(`/api/similar/${id}?type=${type}`);
 }
+}
