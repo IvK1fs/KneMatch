@@ -7,11 +7,23 @@ const search = async (req, res) => {
     return res.status(400).json({ error: 'Parâmetro "q" é obrigatório' });
   }
 
-  const searchType = type === 'tv' ? 'tv' : 'movie';
-  const url = `/search/${searchType}?query=${encodeURIComponent(q)}`;
+  let url;
+  if (type === 'movie' || type === 'tv') {
+    url = `/search/${type}?query=${encodeURIComponent(q)}`;
+  } else {
+    url = `/search/multi?query=${encodeURIComponent(q)}`;
+  }
 
   const data = await fetchFromTMDB(url, res);
-  if (data) res.json(data);
+  if (!data) return;
+
+  if (!type || type === '') {
+    data.results = (data.results ?? []).filter(
+      (item) => item.media_type === 'movie' || item.media_type === 'tv'
+    );
+  }
+
+  res.json(data);
 };
 
 module.exports = { search };
