@@ -1,18 +1,11 @@
-// TrendingSection.tsx  –  CineMatch  |  Sprint 1  |  RF26
-//
-// Seção de Trending da Semana para a HomePage.
-// Conectada a getTrending() de src/services/api.ts
-//
-// Uso na HomePage:
-//   import TrendingSection from "../components/TrendingSection";
-//   <TrendingSection darkMode={darkMode} />
-
 import { useState, useEffect, useRef } from "react";
 import { getTrending, type Title } from "../../services/api";
+import { useNavigate } from "react-router-dom";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 
-// ─── Utilitários ──────────────────────────────────────────────────────────────
+const CARD_WIDTH = 160;
+const CARD_HEIGHT = 240;
 
 function RankBadge({ rank }: { rank: number }) {
   const top3Colors: Record<number, { bg: string; color: string }> = {
@@ -52,16 +45,16 @@ function Spinner() {
   );
 }
 
-// ─── Card de trending ─────────────────────────────────────────────────────────
-
 function TrendingCard({
   item,
   rank,
   darkMode,
+  onClick,
 }: {
   item: Title;
   rank: number;
   darkMode: boolean;
+  onClick: () => void;
 }) {
   const cardBg   = darkMode ? "#1C2333" : "#FFFFFF";
   const textMain = darkMode ? "#E6EDF3" : "#1F4E79";
@@ -71,12 +64,14 @@ function TrendingCard({
   const year  = (item.release_date ?? item.first_air_date ?? "").slice(0, 4);
   const poster = item.poster_path
     ? `${TMDB_IMAGE_BASE}${item.poster_path}`
-    : `https://placehold.co/160x240/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
+    : `https://placehold.co/${CARD_WIDTH}x${CARD_HEIGHT}/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
 
   return (
     <div
+      onClick={onClick}
       style={{
-        flex: "0 0 160px",
+        flex: `0 0 ${CARD_WIDTH}px`,
+        width: CARD_WIDTH,
         background: cardBg,
         borderRadius: 10,
         overflow: "hidden",
@@ -96,23 +91,23 @@ function TrendingCard({
         el.style.boxShadow = "0 2px 10px rgba(0,0,0,0.15)";
       }}
     >
-      {/* Poster */}
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", width: CARD_WIDTH, height: CARD_HEIGHT, flexShrink: 0 }}>
         <img
           src={poster}
           alt={title}
           style={{
-            width: "100%", aspectRatio: "2/3",
-            objectFit: "cover", display: "block",
+            width: CARD_WIDTH,
+            height: CARD_HEIGHT,
+            objectFit: "cover",
+            display: "block",
           }}
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src =
-              `https://placehold.co/160x240/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
+              `https://placehold.co/${CARD_WIDTH}x${CARD_HEIGHT}/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
           }}
         />
         <RankBadge rank={rank} />
 
-        {/* Gradiente inferior */}
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0, height: 60,
           background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
@@ -127,7 +122,6 @@ function TrendingCard({
         </div>
       </div>
 
-      {/* Info */}
       <div style={{ padding: "10px 12px 12px" }}>
         <h4 style={{
           margin: 0, fontSize: 13, fontWeight: 700, color: textMain,
@@ -143,8 +137,6 @@ function TrendingCard({
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
-
 interface TrendingSectionProps {
   darkMode: boolean;
 }
@@ -154,6 +146,7 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   async function load() {
     setLoading(true);
@@ -177,6 +170,11 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
     el.scrollBy({ left: direction === "left" ? -360 : 360, behavior: "smooth" });
   }
 
+  function handleCardClick(item: Title) {
+    const type = item.media_type ?? (item.title ? "movie" : "tv");
+    navigate(`/details/${item.id}?type=${type}`);
+  }
+
   const headingColor = darkMode ? "#E6EDF3" : "#1F4E79";
   const mutedColor   = darkMode ? "#8B949E" : "#666";
   const btnBg        = darkMode ? "#1C2333" : "#fff";
@@ -184,8 +182,6 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
 
   return (
     <section style={{ marginBottom: 40 }}>
-
-      {/* Cabeçalho */}
       <div style={{
         display: "flex", alignItems: "center",
         justifyContent: "space-between", marginBottom: 16,
@@ -230,7 +226,6 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
         )}
       </div>
 
-      {/* Conteúdo */}
       {loading && <Spinner />}
 
       {error && (
@@ -267,12 +262,20 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
               paddingBottom: 12,
               scrollbarWidth: "none",
               msOverflowStyle: "none",
+              alignItems: "flex-start",
             }}
           >
-            <style>{`.trending-scroll::-webkit-scrollbar { display: none; }`}</style>
+            <style>{`
+              .trending-scroll::-webkit-scrollbar { display: none; }
+            `}</style>
             {items.map((item, index) => (
-              <div key={item.id} style={{ scrollSnapAlign: "start" }}>
-                <TrendingCard item={item} rank={index + 1} darkMode={darkMode} />
+              <div key={item.id} style={{ scrollSnapAlign: "start", flexShrink: 0 }}>
+                <TrendingCard
+                  item={item}
+                  rank={index + 1}
+                  darkMode={darkMode}
+                  onClick={() => handleCardClick(item)}
+                />
               </div>
             ))}
           </div>
