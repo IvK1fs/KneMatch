@@ -94,7 +94,6 @@ export function SearchPage() {
         }
       }
 
-      // Filtros client-side (gênero, ano, avaliação)
       if (f.genre) {
         items = items.filter((item) => item.genre_ids?.includes(Number(f.genre)));
       }
@@ -108,7 +107,6 @@ export function SearchPage() {
         items = items.filter((item) => (item.vote_average ?? 0) >= f.rating);
       }
 
-      // Ordenação client-side
       if (f.sort === 'vote_average.desc') {
         items = [...items].sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
       } else if (f.sort === 'release_date.desc') {
@@ -306,16 +304,13 @@ export function SearchPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8">
           {showFilters && (
-            <aside className="w-full md:w-72 flex-shrink-0">
-              <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 border border-gray-300 dark:border-white/10 sticky top-24 space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg text-gray-900 dark:text-white">{t('search.filters')}</h2>
-                  {activeFiltersCount > 0 && <Badge className="bg-red-600">{activeFiltersCount} ativos</Badge>}
             <aside className="w-full md:w-80 flex-shrink-0 space-y-6">
               <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 border border-gray-300 dark:border-white/10 sticky top-24">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl text-gray-900 dark:text-white">{t('search.filters')}</h2>
-                  {activeFiltersCount > 0 && <Badge className="bg-red-600">{activeFiltersCount} {t('search.activeFilters')}</Badge>}
+                  {activeFiltersCount > 0 && (
+                    <Badge className="bg-red-600">{activeFiltersCount} {t('search.activeFilters')}</Badge>
+                  )}
                 </div>
 
                 {/* RF03 — Gênero */}
@@ -386,7 +381,10 @@ export function SearchPage() {
                     step={0.1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-gray-500"><span>0</span><span>10</span></div>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>0</span>
+                    <span>10</span>
+                  </div>
                 </div>
               </div>
             </aside>
