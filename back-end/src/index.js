@@ -8,6 +8,7 @@ const upcomingRoutes = require('./routes/upcoming.routes');
 const detailsRoutes = require('./routes/details.routes');
 const genresRoutes = require('./routes/genres.routes');
 const discoverRoutes = require('./routes/discover.routes');
+const recommendationsRoutes = require('./routes/recommendations.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,7 +23,7 @@ const allowedOrigins = [
 
 // CORS configuration
 app.use(cors({
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -50,6 +51,7 @@ app.use('/api/upcoming', upcomingRoutes);
 app.use('/api/details', detailsRoutes);
 app.use('/api/genres', genresRoutes);
 app.use('/api/discover', discoverRoutes);
+app.use('/api/recommendations', recommendationsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
