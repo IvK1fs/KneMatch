@@ -52,6 +52,7 @@ export function SearchPage() {
   const [apiError, setApiError] = useState(false);
 
   const [genres, setGenres] = useState<Genre[]>([]);
+  const [genreMap, setGenreMap] = useState<Record<number, string>>({});
   const [suggestions, setSuggestions] = useState<Title[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -60,8 +61,18 @@ export function SearchPage() {
   useEffect(() => {
     const type = (filters.type || 'movie') as 'movie' | 'tv';
     getGenres(type)
-      .then((data) => setGenres(data.genres))
-      .catch(() => setGenres(GENRE_FALLBACK));
+      .then((data) => {
+        setGenres(data.genres);
+        const map: Record<number, string> = {};
+        data.genres.forEach((g) => { map[g.id] = g.name; });
+        setGenreMap(map);
+      })
+      .catch(() => {
+        setGenres(GENRE_FALLBACK);
+        const map: Record<number, string> = {};
+        GENRE_FALLBACK.forEach((g) => { map[g.id] = g.name; });
+        setGenreMap(map);
+      });
   }, [filters.type]);
 
   useEffect(() => {
@@ -83,10 +94,17 @@ export function SearchPage() {
         const data = await searchTitles(f.q, f.type);
         items = data.results ?? [];
         pages = (data as any).total_pages ?? 1;
+
+        if (f.type === 'movie') {
+          items = items.filter((item) => !item.name || item.title);
+        } else if (f.type === 'tv') {
+          items = items.filter((item) => item.name && !item.title);
+        }
       } else {
+        const trendingType = f.type || undefined;
         const [trendingData, upcomingData] = await Promise.all([
-          getTrending(),
-          getUpcoming(),
+          getTrending(trendingType),
+          f.type !== 'tv' ? getUpcoming() : Promise.resolve({ results: [] }),
         ]);
         const seen = new Set<number>();
         for (const item of [...(trendingData.results ?? []), ...(upcomingData.results ?? [])]) {
@@ -131,6 +149,11 @@ export function SearchPage() {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function getGenreName(genreIds: number[]): string {
+    if (!genreIds || genreIds.length === 0) return '';
+    return genreMap[genreIds[0]] ?? '';
   }
 
   function handleInputChange(value: string) {
@@ -181,7 +204,7 @@ export function SearchPage() {
   }
 
   function handleResultClick(item: Title) {
-    const type = item.media_type ?? (item.title ? 'movie' : 'tv');
+    const type = item.media_type ?? (item.title && !item.name ? 'movie' : 'tv');
     window.location.href = `/details/${item.id}?type=${type}`;
   }
 
@@ -431,6 +454,7 @@ export function SearchPage() {
                     const year = date ? new Date(date).getFullYear() : '—';
                     const rating = item.vote_average?.toFixed(1) ?? 'N/A';
                     const imageUrl = item.poster_path ? `${TMDB_IMAGE_BASE}${item.poster_path}` : null;
+                    const genreName = getGenreName(item.genre_ids ?? []);
                     return (
                       <div
                         key={item.id}
@@ -452,6 +476,11 @@ export function SearchPage() {
                               <span className="text-gray-900 dark:text-white">{rating}</span>
                             </div>
                           </div>
+                          {genreName && (
+                            <span className="inline-block mt-1 text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded px-2 py-0.5">
+                              {genreName}
+                            </span>
+                          )}
                         </div>
                       </div>
                     );
