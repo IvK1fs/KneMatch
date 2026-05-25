@@ -181,7 +181,7 @@ export function SearchPage() {
   }
 
   function handleResultClick(item: Title) {
-    const type = item.media_type ?? (item.first_air_date ? 'tv' : 'movie');
+    const type = item.media_type ?? (item.title ? 'movie' : 'tv');
     window.location.href = `/details/${item.id}?type=${type}`;
   }
 
@@ -264,6 +264,7 @@ export function SearchPage() {
             </Button>
           </div>
 
+          {/* RF06 — Tipo */}
           <div className="flex items-center gap-2 mt-4">
             {(['', 'movie', 'tv'] as const).map((type) => (
               <button
@@ -307,75 +308,82 @@ export function SearchPage() {
               <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 border border-gray-300 dark:border-white/10 sticky top-24">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl text-gray-900 dark:text-white">{t('search.filters')}</h2>
-                  {activeFiltersCount > 0 && <Badge className="bg-red-600">{activeFiltersCount} {t('search.activeFilters')}</Badge>}
+                  {activeFiltersCount > 0 && (
+                    <Badge className="bg-red-600">{activeFiltersCount} {t('search.activeFilters')}</Badge>
+                  )}
                 </div>
 
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.genre')}</label>
-                    <Select
-                      value={filters.genre || 'all'}
-                      onValueChange={(v) => setFilters((f) => ({ ...f, genre: v === 'all' ? '' : v, page: 1 }))}
-                    >
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white">
-                        <SelectValue placeholder="Todos os gêneros" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos os gêneros</SelectItem>
-                        {genres.map((g) => (
-                          <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* RF03 — Gênero */}
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.genre')}</label>
+                  <Select
+                    value={filters.genre || 'all'}
+                    onValueChange={(v) => setFilters((f) => ({ ...f, genre: v === 'all' ? '' : v, page: 1 }))}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white">
+                      <SelectValue placeholder="Todos os gêneros" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os gêneros</SelectItem>
+                      {genres.map((g) => (
+                        <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.yearFrom')}</label>
-                    <Input
-                      type="number"
-                      placeholder={t('search.yearPlaceholder')}
-                      value={filters.year}
-                      onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value, page: 1 }))}
-                      min="1900"
-                      max="2030"
-                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
+                {/* Ano */}
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.yearFrom')}</label>
+                  <Input
+                    type="number"
+                    placeholder={t('search.yearPlaceholder')}
+                    value={filters.year}
+                    onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value, page: 1 }))}
+                    min="1900"
+                    max="2030"
+                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm text-gray-600 dark:text-gray-400">Ordenar por</label>
-                    <Select
-                      value={filters.sort}
-                      onValueChange={(v) => setFilters((f) => ({ ...f, sort: v, page: 1 }))}
-                    >
-                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="popularity.desc">Mais populares</SelectItem>
-                        <SelectItem value="vote_average.desc">Melhor avaliados</SelectItem>
-                        <SelectItem value="release_date.desc">Mais recentes</SelectItem>
-                        <SelectItem value="release_date.asc">Mais antigos</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* RF08 — Ordenação */}
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-600 dark:text-gray-400">Ordenar por</label>
+                  <Select
+                    value={filters.sort}
+                    onValueChange={(v) => setFilters((f) => ({ ...f, sort: v, page: 1 }))}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="popularity.desc">Mais populares</SelectItem>
+                      <SelectItem value="vote_average.desc">Melhor avaliados</SelectItem>
+                      <SelectItem value="release_date.desc">Mais recentes</SelectItem>
+                      <SelectItem value="release_date.asc">Mais antigos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.minRating')}</label>
-                      <div className="flex items-center gap-1 text-yellow-500">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span className="text-gray-900 dark:text-white text-sm">{filters.rating.toFixed(1)}</span>
-                      </div>
+                {/* Avaliação mínima */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.minRating')}</label>
+                    <div className="flex items-center gap-1 text-yellow-500">
+                      <Star className="w-4 h-4 fill-current" />
+                      <span className="text-gray-900 dark:text-white text-sm">{filters.rating.toFixed(1)}</span>
                     </div>
-                    <Slider
-                      value={[filters.rating]}
-                      onValueChange={([v]) => setFilters((f) => ({ ...f, rating: v, page: 1 }))}
-                      max={10}
-                      step={0.1}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500"><span>0</span><span>10</span></div>
+                  </div>
+                  <Slider
+                    value={[filters.rating]}
+                    onValueChange={([v]) => setFilters((f) => ({ ...f, rating: v, page: 1 }))}
+                    max={10}
+                    step={0.1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>0</span>
+                    <span>10</span>
                   </div>
                 </div>
               </div>
@@ -423,9 +431,6 @@ export function SearchPage() {
                     const year = date ? new Date(date).getFullYear() : '—';
                     const rating = item.vote_average?.toFixed(1) ?? 'N/A';
                     const imageUrl = item.poster_path ? `${TMDB_IMAGE_BASE}${item.poster_path}` : null;
-                    const genreName = item.genre_ids?.[0]
-                      ? genres.find(g => g.id === item.genre_ids[0])?.name ?? ''
-                      : '';
                     return (
                       <div
                         key={item.id}
@@ -447,17 +452,13 @@ export function SearchPage() {
                               <span className="text-gray-900 dark:text-white">{rating}</span>
                             </div>
                           </div>
-                          {genreName && (
-                            <span className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate block">
-                              {genreName}
-                            </span>
-                          )}
                         </div>
                       </div>
                     );
                   })}
                 </div>
 
+                {/* RF10 — Paginação */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-4 mt-8">
                     <Button
