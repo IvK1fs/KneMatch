@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { getTrending, type Title } from "../../services/api";
-import { useNavigate } from "react-router-dom";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 
@@ -146,8 +145,6 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-
   async function load() {
     setLoading(true);
     setError(false);
@@ -172,7 +169,7 @@ export default function TrendingSection({ darkMode }: TrendingSectionProps) {
 
   function handleCardClick(item: Title) {
     const type = item.media_type ?? (item.title ? "movie" : "tv");
-    navigate(`/details/${item.id}?type=${type}`);
+    window.location.href = `/details/${item.id}?type=${type}`;
   }
 
   const headingColor = darkMode ? "#E6EDF3" : "#1F4E79";
