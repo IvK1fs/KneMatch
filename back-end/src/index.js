@@ -9,6 +9,7 @@ const detailsRoutes = require('./routes/details.routes');
 const genresRoutes = require('./routes/genres.routes');
 const discoverRoutes = require('./routes/discover.routes');
 const recommendationsRoutes = require('./routes/recommendations.routes');
+const topRoutes = require('./routes/top.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -52,6 +53,7 @@ app.use('/api/details', detailsRoutes);
 app.use('/api/genres', genresRoutes);
 app.use('/api/discover', discoverRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
+app.use('/api', topRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

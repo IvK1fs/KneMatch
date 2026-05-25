@@ -62,4 +62,4 @@ module.exports = {
   getVideos,
   getProviders,
   getSimilar
-};
+}
