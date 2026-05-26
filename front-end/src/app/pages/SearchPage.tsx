@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../components/ui/badge';
 import { Slider } from '../components/ui/slider';
 import { useTranslation } from 'react-i18next';
-import { searchTitles, getTrending, getUpcoming, getGenres, Title, Genre } from '../../services/api';
+import { searchTitles, discoverTitles, getTrending, getUpcoming, getGenres, Title, Genre } from '../../services/api';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w300';
 
@@ -56,7 +56,6 @@ export function SearchPage() {
   const [suggestions, setSuggestions] = useState<Title[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const skipSearchRef = useRef(false);
 
   useEffect(() => {
     const type = (filters.type || 'movie') as 'movie' | 'tv';
@@ -76,10 +75,6 @@ export function SearchPage() {
   }, [filters.type]);
 
   useEffect(() => {
-    if (skipSearchRef.current) {
-      skipSearchRef.current = false;
-      return;
-    }
     executeSearch(filters);
   }, [filters]);
 
@@ -90,55 +85,34 @@ export function SearchPage() {
       let items: Title[] = [];
       let pages = 1;
 
-      if (f.q.trim()) {
-        const data = await searchTitles(f.q, f.type);
+      try {
+        const data = await discoverTitles({
+          q: f.q,
+          type: f.type,
+          genre: f.genre,
+          sort: f.sort,
+          page: f.page,
+          year: f.year,
+          rating: f.rating,
+        });
         items = data.results ?? [];
-        pages = (data as any).total_pages ?? 1;
-
-        if (f.type === 'movie') {
-          items = items.filter((item) => !item.name || item.title);
-        } else if (f.type === 'tv') {
-          items = items.filter((item) => item.name && !item.title);
+        pages = data.total_pages ?? 1;
+      } catch {
+        // fallback enquanto /api/discover não está deployado
+        if (f.q.trim()) {
+          const data = await searchTitles(f.q, f.type);
+          items = data.results ?? [];
+        } else {
+          const trendingType = f.type || undefined;
+          const [trendingData, upcomingData] = await Promise.all([
+            getTrending(trendingType),
+            f.type !== 'tv' ? getUpcoming() : Promise.resolve({ results: [] }),
+          ]);
+          const seen = new Set<number>();
+          for (const item of [...(trendingData.results ?? []), ...(upcomingData.results ?? [])]) {
+            if (!seen.has(item.id)) { seen.add(item.id); items.push(item); }
+          }
         }
-      } else {
-        const trendingType = f.type || undefined;
-        const [trendingData, upcomingData] = await Promise.all([
-          getTrending(trendingType),
-          f.type !== 'tv' ? getUpcoming() : Promise.resolve({ results: [] }),
-        ]);
-        const seen = new Set<number>();
-        for (const item of [...(trendingData.results ?? []), ...(upcomingData.results ?? [])]) {
-          if (!seen.has(item.id)) { seen.add(item.id); items.push(item); }
-        }
-      }
-
-      if (f.genre) {
-        items = items.filter((item) => item.genre_ids?.includes(Number(f.genre)));
-      }
-      if (f.year) {
-        items = items.filter((item) => {
-          const date = item.release_date ?? item.first_air_date ?? '';
-          return date.startsWith(f.year);
-        });
-      }
-      if (f.rating > 0) {
-        items = items.filter((item) => (item.vote_average ?? 0) >= f.rating);
-      }
-
-      if (f.sort === 'vote_average.desc') {
-        items = [...items].sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
-      } else if (f.sort === 'release_date.desc') {
-        items = [...items].sort((a, b) => {
-          const da = a.release_date ?? a.first_air_date ?? '';
-          const db = b.release_date ?? b.first_air_date ?? '';
-          return db.localeCompare(da);
-        });
-      } else if (f.sort === 'release_date.asc') {
-        items = [...items].sort((a, b) => {
-          const da = a.release_date ?? a.first_air_date ?? '';
-          const db = b.release_date ?? b.first_air_date ?? '';
-          return da.localeCompare(db);
-        });
       }
 
       setResults(items);
@@ -170,22 +144,13 @@ export function SearchPage() {
     }
 
     debounceRef.current = setTimeout(async () => {
-      setIsLoading(true);
-      setApiError(false);
       try {
         const data = await searchTitles(value);
-        const items = data.results ?? [];
-        setSuggestions(items.slice(0, 5));
+        setSuggestions((data.results ?? []).slice(0, 5));
         setShowSuggestions(true);
-        setResults(items);
       } catch {
         setSuggestions([]);
-        setApiError(true);
-        setResults([]);
-      } finally {
-        setIsLoading(false);
       }
-      skipSearchRef.current = true;
       setFilters((f) => ({ ...f, q: value, page: 1 }));
     }, 300);
   }

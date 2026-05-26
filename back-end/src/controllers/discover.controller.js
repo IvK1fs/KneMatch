@@ -15,7 +15,7 @@ const discover = async (req, res) => {
       page: page || '1',
     });
     if (genre) params.append('with_genres', genre);
-    if (year) params.append('primary_release_year', year);
+    if (year) params.append('primary_release_date.gte', `${year}-01-01`);
     if (minRating && parseFloat(minRating) > 0) params.append('vote_average.gte', minRating);
     url = `/discover/${mediaType}?${params.toString()}`;
   }
