@@ -1,11 +1,12 @@
 import { createBrowserRouter } from 'react-router';
 import { Root } from './Root';
 import { HomePage } from './pages/HomePage';
+import UpcomingPage from './pages/UpcomingPage';
 import { UpcomingShowcasePage } from './pages/UpcomingShowcasePage';
 import { TopTenPage } from './pages/TopTenPage';
 import { SearchPage } from './pages/SearchPage';
-import DetailsPage from './pages/DetailsPage';
-import UpcomingPage from './pages/UpcomingPage';
+import { LoginPage } from './pages/LoginPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +18,8 @@ export const router = createBrowserRouter([
       { path: 'upcoming-showcase', Component: UpcomingShowcasePage },
       { path: 'top-10', Component: TopTenPage },
       { path: 'search', Component: SearchPage },
-      { path: 'details/:id', Component: DetailsPage },
+      { path: 'login', Component: LoginPage },
+      { path: 'profile', Component: ProfilePage },
     ],
   },
 ]);
