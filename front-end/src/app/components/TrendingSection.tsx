@@ -1,289 +1,100 @@
 import { useState, useEffect, useRef } from "react";
 import { getTrending, type Title } from "../../services/api";
+import { ChevronLeft, ChevronRight, Star, Plus } from "lucide-react";
+import { Button } from "./ui/button";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
 
-const CARD_WIDTH = 160;
-const CARD_HEIGHT = 240;
-
-function RankBadge({ rank }: { rank: number }) {
-  const top3Colors: Record<number, { bg: string; color: string }> = {
-    1: { bg: "#FFD700", color: "#1a1a1a" },
-    2: { bg: "#C0C0C0", color: "#1a1a1a" },
-    3: { bg: "#CD7F32", color: "#fff" },
-  };
-  const style = top3Colors[rank] ?? { bg: "#4472C4", color: "#fff" };
-
-  return (
-    <div style={{
-      position: "absolute", top: 8, left: 8,
-      width: 30, height: 30, borderRadius: "50%",
-      background: style.bg, color: style.color,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontWeight: 900, fontSize: rank <= 3 ? 13 : 12,
-      boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
-      zIndex: 2,
-    }}>
-      {rank}
-    </div>
-  );
+function getPosterUrl(item: Title) {
+  if (item.poster_path) return `${TMDB_IMAGE_BASE}${item.poster_path}`;
+  const title = item.title ?? item.name ?? "";
+  return `https://placehold.co/300x450/1a1a1a/ffffff?text=${encodeURIComponent(title)}`;
 }
 
-function Spinner() {
-  return (
-    <div style={{ display: "flex", justifyContent: "center", padding: "40px 0" }}>
-      <div style={{
-        width: 36, height: 36,
-        border: "3px solid #BDD7EE",
-        borderTopColor: "#4472C4",
-        borderRadius: "50%",
-        animation: "spin 0.8s linear infinite",
-      }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
-}
-
-function TrendingCard({
-  item,
-  rank,
-  darkMode,
-  onClick,
-}: {
-  item: Title;
-  rank: number;
-  darkMode: boolean;
-  onClick: () => void;
-}) {
-  const cardBg   = darkMode ? "#1C2333" : "#FFFFFF";
-  const textMain = darkMode ? "#E6EDF3" : "#1F4E79";
-  const textSub  = darkMode ? "#8B949E" : "#666";
-
-  const title = item.title ?? item.name ?? "Sem título";
-  const year  = (item.release_date ?? item.first_air_date ?? "").slice(0, 4);
-  const poster = item.poster_path
-    ? `${TMDB_IMAGE_BASE}${item.poster_path}`
-    : `https://placehold.co/${CARD_WIDTH}x${CARD_HEIGHT}/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
-
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        flex: `0 0 ${CARD_WIDTH}px`,
-        width: CARD_WIDTH,
-        background: cardBg,
-        borderRadius: 10,
-        overflow: "hidden",
-        position: "relative",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
-        transition: "transform 0.2s, box-shadow 0.2s",
-        cursor: "pointer",
-      }}
-      onMouseEnter={(e) => {
-        const el = e.currentTarget as HTMLDivElement;
-        el.style.transform = "translateY(-5px) scale(1.02)";
-        el.style.boxShadow = "0 8px 24px rgba(68,114,196,0.3)";
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget as HTMLDivElement;
-        el.style.transform = "";
-        el.style.boxShadow = "0 2px 10px rgba(0,0,0,0.15)";
-      }}
-    >
-      <div style={{ position: "relative", width: CARD_WIDTH, height: CARD_HEIGHT, flexShrink: 0 }}>
-        <img
-          src={poster}
-          alt={title}
-          style={{
-            width: CARD_WIDTH,
-            height: CARD_HEIGHT,
-            objectFit: "cover",
-            display: "block",
-          }}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src =
-              `https://placehold.co/${CARD_WIDTH}x${CARD_HEIGHT}/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
-          }}
-        />
-        <RankBadge rank={rank} />
-
-        <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, height: 60,
-          background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)",
-        }}>
-          <span style={{
-            position: "absolute", bottom: 6, right: 8,
-            background: "rgba(68,114,196,0.9)", color: "#fff",
-            borderRadius: 4, padding: "2px 7px", fontSize: 12, fontWeight: 700,
-          }}>
-            ★ {item.vote_average.toFixed(1)}
-          </span>
-        </div>
-      </div>
-
-      <div style={{ padding: "10px 12px 12px" }}>
-        <h4 style={{
-          margin: 0, fontSize: 13, fontWeight: 700, color: textMain,
-          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-        }}>
-          {title}
-        </h4>
-        <p style={{ margin: "3px 0 0", fontSize: 11, color: textSub }}>
-          {year}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-interface TrendingSectionProps {
-  darkMode: boolean;
-}
-
-export default function TrendingSection({ darkMode }: TrendingSectionProps) {
-  const [items,   setItems]   = useState<Title[]>([]);
+export default function TrendingSection() {
+  const [items, setItems] = useState<Title[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  async function load() {
-    setLoading(true);
-    setError(false);
-    try {
-      const data = await getTrending();
-      setItems(data.results);
-    } catch (err) {
-      console.error("[TrendingSection] getTrending failed:", err);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
+
+  useEffect(() => {
+    getTrending()
+      .then((data) => setItems(data.results))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  function scroll(dir: "left" | "right") {
+    scrollRef.current?.scrollBy({ left: dir === "left" ? -480 : 480, behavior: "smooth" });
   }
-
-  useEffect(() => { load(); }, []);
-
-  function scroll(direction: "left" | "right") {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollBy({ left: direction === "left" ? -360 : 360, behavior: "smooth" });
-  }
-
-  function handleCardClick(item: Title) {
-    const type = item.media_type ?? (item.title ? "movie" : "tv");
-    window.location.href = `/details/${item.id}?type=${type}`;
-  }
-
-  const headingColor = darkMode ? "#E6EDF3" : "#1F4E79";
-  const mutedColor   = darkMode ? "#8B949E" : "#666";
-  const btnBg        = darkMode ? "#1C2333" : "#fff";
-  const btnColor     = darkMode ? "#E6EDF3" : "#4472C4";
 
   return (
-    <section style={{ marginBottom: 40 }}>
-      <div style={{
-        display: "flex", alignItems: "center",
-        justifyContent: "space-between", marginBottom: 16,
-      }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: headingColor }}>
-            🔥 Trending da Semana
-          </h2>
-          <p style={{ margin: "2px 0 0", fontSize: 13, color: mutedColor }}>
-            Os títulos mais assistidos nos últimos 7 dias
-          </p>
+    <section className="py-8">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl md:text-3xl text-gray-900 dark:text-white">Popular</h2>
+          <div className="hidden md:flex gap-2">
+            <Button variant="ghost" size="icon" onClick={() => scroll("left")} className="text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-white/10">
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => scroll("right")} className="text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-white/10">
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
-        {!loading && !error && (
-          <div style={{ display: "flex", gap: 8 }}>
-            {(["left", "right"] as const).map((dir) => (
-              <button
-                key={dir}
-                onClick={() => scroll(dir)}
-                aria-label={dir === "left" ? "Anterior" : "Próximo"}
-                style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  border: `2px solid #4472C4`,
-                  background: btnBg, color: btnColor,
-                  cursor: "pointer", fontSize: 16,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "background 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "#4472C4";
-                  (e.currentTarget as HTMLButtonElement).style.color = "#fff";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = btnBg;
-                  (e.currentTarget as HTMLButtonElement).style.color = btnColor;
-                }}
-              >
-                {dir === "left" ? "‹" : "›"}
-              </button>
-            ))}
-          </div>
-        )}
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {loading
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex-none w-44 sm:w-48 md:w-56 aspect-[2/3] rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse" />
+              ))
+            : items.map((item) => {
+                const title = item.title ?? item.name ?? "Sem título";
+                const year = (item.release_date ?? item.first_air_date ?? "").slice(0, 4);
+                const type = item.media_type ?? (item.title ? "movie" : "tv");
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => { window.location.href = `/details/${item.id}?type=${type}`; }}
+                    className="flex-none w-44 sm:w-48 md:w-56 group relative overflow-hidden rounded-lg transition-transform hover:scale-105 cursor-pointer shadow-md dark:shadow-none"
+                  >
+                    <div className="aspect-[2/3] overflow-hidden bg-gray-200 dark:bg-gray-800">
+                      <img
+                        src={getPosterUrl(item)}
+                        alt={title}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src =
+                            `https://placehold.co/300x450/1a1a1a/ffffff?text=${encodeURIComponent(title)}`;
+                        }}
+                      />
+                    </div>
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                      <h3 className="text-white text-sm mb-1 line-clamp-2">{title}</h3>
+                      <div className="flex items-center gap-1 text-xs text-gray-300 mb-2">
+                        <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                        <span>{item.vote_average.toFixed(1)}</span>
+                        {year && <><span>•</span><span>{year}</span></>}
+                      </div>
+                      <Button size="sm" className="w-full bg-white text-black hover:bg-gray-200 gap-1 text-xs h-7">
+                        <Plus className="w-3 h-3" />
+                        Adicionar
+                      </Button>
+                    </div>
+
+                    <div className="absolute top-2 right-2 bg-white/90 dark:bg-black/80 backdrop-blur-sm px-2 py-1 rounded flex items-center gap-1 text-xs">
+                      <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                      <span className="text-gray-900 dark:text-white">{item.vote_average.toFixed(1)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+        </div>
       </div>
-
-      {loading && <Spinner />}
-
-      {error && (
-        <div style={{
-          background: "#FFF3CD", border: "1px solid #FFCA2C",
-          borderRadius: 8, padding: "12px 16px",
-          display: "flex", alignItems: "center", gap: 12,
-        }}>
-          <span>⚠️</span>
-          <span style={{ flex: 1, fontSize: 14, color: "#664D03" }}>
-            Não foi possível carregar o trending.
-          </span>
-          <button
-            onClick={load}
-            style={{
-              background: "#4472C4", color: "#fff", border: "none",
-              borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: 13,
-            }}
-          >
-            Tentar novamente
-          </button>
-        </div>
-      )}
-
-      {!loading && !error && (
-        <>
-          <div
-            ref={scrollRef}
-            style={{
-              display: "flex",
-              gap: 16,
-              overflowX: "auto",
-              scrollSnapType: "x mandatory",
-              paddingBottom: 12,
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              alignItems: "flex-start",
-            }}
-          >
-            <style>{`
-              .trending-scroll::-webkit-scrollbar { display: none; }
-            `}</style>
-            {items.map((item, index) => (
-              <div key={item.id} style={{ scrollSnapAlign: "start", flexShrink: 0 }}>
-                <TrendingCard
-                  item={item}
-                  rank={index + 1}
-                  darkMode={darkMode}
-                  onClick={() => handleCardClick(item)}
-                />
-              </div>
-            ))}
-          </div>
-
-          <p style={{
-            margin: "8px 0 0", fontSize: 12, color: mutedColor, textAlign: "right",
-          }}>
-            {items.length} títulos em destaque esta semana
-          </p>
-        </>
-      )}
     </section>
   );
 }

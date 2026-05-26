@@ -30,7 +30,7 @@ export function HomePage() {
       <Hero />
       <Categories />
       <div className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black">
-        <TrendingSection darkMode={false} />
+        <TrendingSection />
         <ContentRow title={t('home.popularSeries')} items={topSeries} />
         <ContentRow title={t('home.recommendedForYou')} items={recommended} />
       </div>
