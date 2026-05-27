@@ -109,7 +109,7 @@ export async function getUpcoming(): Promise<{ results: Title[] }> {
   return fetchAPI<{ results: Title[] }>("/api/upcoming");
 }
 
-const USAR_MOCK_CAST = true;
+const USAR_MOCK_CAST = false;
 
 const mockCast: CastMember[] = [
   { id: 1, name: "Leonardo DiCaprio", character: "Cobb", profile_path: null },
@@ -127,7 +127,7 @@ export async function getCast(id: string | number, type: MediaType = "movie"): P
   return fetchAPI(`/api/details/${id}/cast?type=${type}`);
 }
 
-const USAR_MOCK_VIDEOS = true;
+const USAR_MOCK_VIDEOS = false;
 
 const mockVideos: Video[] = [
   { key: "YoHD9XEInc0", type: "Trailer", site: "YouTube" },
@@ -141,7 +141,7 @@ export async function getVideos(id: string | number, type: MediaType = "movie"):
   return fetchAPI(`/api/details/${id}/videos?type=${type}`);
 }
 
-const USAR_MOCK_PROVIDERS = true;
+const USAR_MOCK_PROVIDERS = false;
 
 export async function getProviders(id: string | number, type: MediaType = "movie"): Promise<{ results: Provider[] }> {
   if (USAR_MOCK_PROVIDERS) {
@@ -183,12 +183,12 @@ export async function discoverTitles(params: DiscoverParams): Promise<{ results:
 }
 
 export async function getTopTen(type: MediaType | "" = "") {
-  const params = new URLSearchParams();
-  if (type) params.append("type", type);
-  const query = params.toString() ? `?${params.toString()}` : "";
-  return fetchAPI<{ results: Title[] }>(`/api/top10${query}`);
+  if (type === 'tv') {
+    return fetchAPI<{ results: Title[] }>('/api/top/tv');
+  }
+  return fetchAPI<{ results: Title[] }>('/api/top/movie');
 }
 
 export async function getSimilar(id: string | number, type: MediaType = "movie") {
-  return fetchAPI<{ results: Title[] }>(`/api/similar/${id}?type=${type}`);
+  return fetchAPI<{ results: Title[] }>(`/api/details/${id}/similar?type=${type}`);
 }
