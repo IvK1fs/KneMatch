@@ -122,5 +122,29 @@
     "pt": "Português",
     "en": "English",
     "selectLanguage": "Selecionar idioma"
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signUp": "Criar conta",
+    "signInButton": "Entrar",
+    "signUpButton": "Criar conta",
+    "welcome": "Bem-vindo de volta! Faça login para continuar.",
+    "email": "E-mail",
+    "emailPlaceholder": "seu@email.com",
+    "password": "Senha",
+    "passwordPlaceholder": "••••••••",
+    "name": "Nome",
+    "namePlaceholder": "Seu nome completo",
+    "confirmPassword": "Confirmar senha",
+    "confirmPasswordPlaceholder": "••••••••",
+    "forgotPassword": "Esqueceu a senha?",
+    "or": "ou",
+    "continueWithGoogle": "Continuar com Google",
+    "loading": "Carregando...",
+    "loginError": "E-mail ou senha incorretos. Tente novamente.",
+    "signupError": "Erro ao criar conta. Tente novamente.",
+    "passwordMismatch": "As senhas não coincidem.",
+    "passwordTooShort": "A senha deve ter pelo menos 6 caracteres.",
+    "googleComingSoon": "Login com Google em breve!"
   }
 }
