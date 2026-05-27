@@ -78,16 +78,20 @@ export function SearchPage() {
     executeSearch(filters);
   }, [filters]);
 
-  async function executeSearch(f: FilterState) {
-    setIsLoading(true);
-    setApiError(false);
-    try {
-      let items: Title[] = [];
-      let pages = 1;
+ async function executeSearch(f: FilterState) {
+  setIsLoading(true);
+  setApiError(false);
+  try {
+    let items: Title[] = [];
+    let pages = 1;
 
+    if (f.q.trim()) {
+      const data = await searchTitles(f.q, f.type);
+      items = data.results ?? [];
+      pages = (data as any).total_pages ?? 1;
+    } else {
       try {
         const data = await discoverTitles({
-          q: f.q,
           type: f.type,
           genre: f.genre,
           sort: f.sort,
@@ -98,32 +102,27 @@ export function SearchPage() {
         items = data.results ?? [];
         pages = data.total_pages ?? 1;
       } catch {
-        // fallback enquanto /api/discover não está deployado
-        if (f.q.trim()) {
-          const data = await searchTitles(f.q, f.type);
-          items = data.results ?? [];
-        } else {
-          const trendingType = f.type || undefined;
-          const [trendingData, upcomingData] = await Promise.all([
-            getTrending(trendingType),
-            f.type !== 'tv' ? getUpcoming() : Promise.resolve({ results: [] }),
-          ]);
-          const seen = new Set<number>();
-          for (const item of [...(trendingData.results ?? []), ...(upcomingData.results ?? [])]) {
-            if (!seen.has(item.id)) { seen.add(item.id); items.push(item); }
-          }
+        const trendingType = f.type || undefined;
+        const [trendingData, upcomingData] = await Promise.all([
+          getTrending(trendingType),
+          f.type !== 'tv' ? getUpcoming() : Promise.resolve({ results: [] }),
+        ]);
+        const seen = new Set<number>();
+        for (const item of [...(trendingData.results ?? []), ...(upcomingData.results ?? [])]) {
+          if (!seen.has(item.id)) { seen.add(item.id); items.push(item); }
         }
       }
-
-      setResults(items);
-      setTotalPages(pages);
-    } catch {
-      setApiError(true);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
     }
+
+    setResults(items);
+    setTotalPages(pages);
+  } catch {
+    setApiError(true);
+    setResults([]);
+  } finally {
+    setIsLoading(false);
   }
+}
 
   function getGenreName(genreIds: number[]): string {
     if (!genreIds || genreIds.length === 0) return '';
