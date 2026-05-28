@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../db');
 
-// ==================== SIGNUP ====================
+// ==================== CADASTRO ====================
 const signupUser = async (req, res) => {
     const { nome, email, senha } = req.body;
 
@@ -18,7 +18,7 @@ const signupUser = async (req, res) => {
     try {
         // Verificar se email já existe
         const existingUser = await pool.query(
-            'SELECT id FROM users WHERE email = $1',
+            'SELECT id FROM usuarios WHERE email = $1',
             [email.toLowerCase()]
         );
 
@@ -28,36 +28,43 @@ const signupUser = async (req, res) => {
 
         // Hash da senha
         const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(senha, salt);
+        const senhaHash = await bcrypt.hash(senha, salt);
 
         // Criar usuário
         const result = await pool.query(
-            `INSERT INTO users (name, email, password_hash) 
-       VALUES ($1, $2, $3) 
-       RETURNING id, name, email`,
-            [nome, email.toLowerCase(), passwordHash]
+            `INSERT INTO usuarios (nome, email, senha_hash, criado_em) 
+             VALUES ($1, $2, $3, NOW()) 
+             RETURNING id, nome, email, criado_em`,
+            [nome, email.toLowerCase(), senhaHash]
         );
 
-        const user = result.rows[0];
+        const usuario = result.rows[0];
 
         // Gerar token JWT
         const token = jwt.sign(
-            { id: user.id, email: user.email },
+            { id: usuario.id, email: usuario.email },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
+        );
+
+        // Registrar sessão ativa
+        await pool.query(
+            `INSERT INTO sessoes (usuario_id, token, expira_em, criado_em)
+             VALUES ($1, $2, NOW() + INTERVAL '7 days', NOW())`,
+            [usuario.id, token]
         );
 
         res.status(201).json({
             token,
             usuario: {
-                id: user.id,
-                nome: user.name,
-                email: user.email
+                id: usuario.id,
+                nome: usuario.nome,
+                email: usuario.email
             }
         });
 
     } catch (error) {
-        console.error('Erro no signup:', error);
+        console.error('Erro no cadastro:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 };
@@ -72,7 +79,7 @@ const loginUser = async (req, res) => {
 
     try {
         const result = await pool.query(
-            'SELECT id, name, email, password_hash FROM users WHERE email = $1',
+            'SELECT id, nome, email, senha_hash FROM usuarios WHERE email = $1',
             [email.toLowerCase()]
         );
 
@@ -80,25 +87,32 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ error: 'Email ou senha inválidos' });
         }
 
-        const user = result.rows[0];
-        const isValidPassword = await bcrypt.compare(senha, user.password_hash);
+        const usuario = result.rows[0];
+        const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
 
-        if (!isValidPassword) {
+        if (!senhaValida) {
             return res.status(401).json({ error: 'Email ou senha inválidos' });
         }
 
         const token = jwt.sign(
-            { id: user.id, email: user.email },
+            { id: usuario.id, email: usuario.email },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
+        );
+
+        // Registrar sessão ativa
+        await pool.query(
+            `INSERT INTO sessoes (usuario_id, token, expira_em, criado_em)
+             VALUES ($1, $2, NOW() + INTERVAL '7 days', NOW())`,
+            [usuario.id, token]
         );
 
         res.status(200).json({
             token,
             usuario: {
-                id: user.id,
-                nome: user.name,
-                email: user.email
+                id: usuario.id,
+                nome: usuario.nome,
+                email: usuario.email
             }
         });
 
@@ -110,9 +124,19 @@ const loginUser = async (req, res) => {
 
 // ==================== LOGOUT ====================
 const logoutUser = async (req, res) => {
-    // Como usamos JWT stateless, o logout é feito no cliente
-    // O cliente simplesmente descarta o token
-    res.status(200).json({ message: 'Logout realizado com sucesso' });
+    const usuarioId = req.usuarioId;
+    const token = req.token;
+
+    try {
+        // Invalidar sessão (remover token)
+        await pool.query('DELETE FROM sessoes WHERE usuario_id = $1 AND token = $2', [usuarioId, token]);
+
+        res.status(200).json({ message: 'Logout realizado com sucesso' });
+
+    } catch (error) {
+        console.error('Erro no logout:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
 };
 
 module.exports = { signupUser, loginUser, logoutUser };

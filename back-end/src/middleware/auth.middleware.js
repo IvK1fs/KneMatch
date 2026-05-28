@@ -1,21 +1,39 @@
 // back-end/src/middleware/auth.middleware.js
 const jwt = require('jsonwebtoken');
+const { pool } = require('../db');
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
     const header = req.headers.authorization;
 
     if (!header) {
-        return res.status(401).json({ error: 'Token nao fornecido' });
+        return res.status(401).json({ error: 'Token não fornecido' });
     }
 
     const token = header.split(' ')[1];
 
     try {
+        // Verificar token JWT
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.userId = decoded.id;
+
+        // Verificar se token está ativo no banco (sessão válida)
+        const sessao = await pool.query(
+            'SELECT usuario_id FROM sessoes WHERE token = $1 AND expira_em > NOW()',
+            [token]
+        );
+
+        if (sessao.rows.length === 0) {
+            return res.status(401).json({ error: 'Sessão expirada ou inválida' });
+        }
+
+        req.usuarioId = decoded.id;
+        req.token = token;
         next();
-    } catch {
-        return res.status(401).json({ error: 'Token invalido' });
+
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Token expirado' });
+        }
+        return res.status(401).json({ error: 'Token inválido' });
     }
 };
 
