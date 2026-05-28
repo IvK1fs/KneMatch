@@ -1,7 +1,8 @@
-import { Search, Menu, Moon, Sun } from 'lucide-react';
+import { Search, Menu, Moon, Sun, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +10,7 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { isAuthenticated } = useAuth();
   const { t } = useTranslation();
 
   const isActive = (path: string) => {
@@ -60,6 +62,23 @@ export function Header() {
           >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
+          {isAuthenticated ? (
+            <Button
+              onClick={() => navigate('/profile')}
+              variant="ghost"
+              size="icon"
+              className="text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+            >
+              <User className="w-5 h-5" />
+            </Button>
+          ) : (
+            <Button
+              onClick={() => navigate('/login')}
+              className="bg-[#e50914] hover:bg-[#c40812] text-white hidden md:inline-flex"
+            >
+              {t('auth.signIn')}
+            </Button>
+          )}
           <Button variant="ghost" size="icon" className="text-gray-900 dark:text-white md:hidden">
             <Menu className="w-5 h-5" />
           </Button>

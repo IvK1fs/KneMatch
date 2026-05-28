@@ -1,7 +1,11 @@
+// back-end/src/index.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
+// Importar rotas
+const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 const searchRoutes = require('./routes/search.routes');
 const trendingRoutes = require('./routes/trending.routes');
 const upcomingRoutes = require('./routes/upcoming.routes');
@@ -9,7 +13,6 @@ const detailsRoutes = require('./routes/details.routes');
 const genresRoutes = require('./routes/genres.routes');
 const discoverRoutes = require('./routes/discover.routes');
 const recommendationsRoutes = require('./routes/recommendations.routes');
-const topRoutes = require('./routes/top.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -21,8 +24,7 @@ const allowedOrigins = [
   'http://localhost:3000'
 ].filter(Boolean);
 
-
-// CORS configuration
+// CORS
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -37,7 +39,11 @@ app.use(cors({
 
 app.use(express.json());
 
-// ROTA RAIZ (adicione isso!)
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 app.get('/', (req, res) => {
   res.json({
     message: 'CineMatch API funcionando!',
@@ -45,7 +51,11 @@ app.get('/', (req, res) => {
   });
 });
 
-// Routes
+// ==================== ROTAS ====================
+
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/trending', trendingRoutes);
 app.use('/api/upcoming', upcomingRoutes);
@@ -53,14 +63,10 @@ app.use('/api/details', detailsRoutes);
 app.use('/api/genres', genresRoutes);
 app.use('/api/discover', discoverRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
-app.use('/api', topRoutes);
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
+// ==================== SERVIDOR ====================
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 Frontend allowed: ${process.env.FRONTEND_URL}`);
+  console.log(`🔐 Auth endpoints: /api/auth`);
+  console.log(`👤 User endpoints: /api/users`);
 });
