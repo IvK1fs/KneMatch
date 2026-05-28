@@ -24,9 +24,11 @@ RUN apk add --no-cache curl
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copia os arquivos (index.js está na mesma pasta)
+COPY --from=builder /app/db.js ./db.js
 COPY --from=builder /app/index.js ./
 COPY --from=builder /app/controllers ./controllers
 COPY --from=builder /app/routes ./routes
+COPY --from=builder /app/middleware ./middleware
 COPY --from=builder /app/package*.json ./
 
 # Expõe a porta
