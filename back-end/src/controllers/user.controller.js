@@ -145,7 +145,7 @@ const getLists = async (req, res) => {
             });
         }
 
-        res.status(200).json({ listas });
+        res.status(200).json({ lists: listas });
 
     } catch (error) {
         console.error('Erro ao buscar listas:', error);
