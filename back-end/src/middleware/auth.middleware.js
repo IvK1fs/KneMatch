@@ -12,12 +12,10 @@ const authMiddleware = async (req, res, next) => {
     const token = header.split(' ')[1];
 
     try {
-        // Verificar token JWT
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // Verificar se token está ativo no banco (sessão válida)
         const sessao = await pool.query(
-            'SELECT usuario_id FROM sessoes WHERE token = $1 AND expira_em > NOW()',
+            'SELECT usuario_id FROM sessao WHERE token = $1 AND expira_em > NOW()',
             [token]
         );
 
