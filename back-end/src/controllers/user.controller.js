@@ -3,7 +3,6 @@ const { pool } = require('../db');
 
 // ==================== FAVORITOS ====================
 
-// GET /api/users/favorites - Listar favoritos
 const getFavorites = async (req, res) => {
     const usuarioId = req.usuarioId;
 
@@ -16,14 +15,14 @@ const getFavorites = async (req, res) => {
                 poster_url,
                 nota,
                 adicionado_em
-             FROM favoritos 
+             FROM favorito 
              WHERE usuario_id = $1 
              ORDER BY adicionado_em DESC`,
             [usuarioId]
         );
 
         res.status(200).json({
-            favoritos: result.rows.map(fav => ({
+            favorites: result.rows.map(fav => ({
                 tmdb_id: fav.tmdb_id,
                 tipo: fav.tipo,
                 titulo: fav.titulo,
@@ -38,7 +37,6 @@ const getFavorites = async (req, res) => {
     }
 };
 
-// POST /api/users/favorites - Adicionar favorito
 const addFavorite = async (req, res) => {
     const usuarioId = req.usuarioId;
     const { tmdb_id, tipo, titulo, poster_url, nota } = req.body;
@@ -52,9 +50,8 @@ const addFavorite = async (req, res) => {
     }
 
     try {
-        // Verificar se já existe
         const existing = await pool.query(
-            'SELECT id FROM favoritos WHERE usuario_id = $1 AND tmdb_id = $2 AND tipo = $3',
+            'SELECT id FROM favorito WHERE usuario_id = $1 AND tmdb_id = $2 AND tipo = $3',
             [usuarioId, tmdb_id, tipo]
         );
 
@@ -62,9 +59,8 @@ const addFavorite = async (req, res) => {
             return res.status(409).json({ error: 'Item já está nos favoritos' });
         }
 
-        // Adicionar aos favoritos
         await pool.query(
-            `INSERT INTO favoritos (usuario_id, tmdb_id, tipo, titulo, poster_url, nota, adicionado_em)
+            `INSERT INTO favorito (usuario_id, tmdb_id, tipo, titulo, poster_url, nota, adicionado_em)
              VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
             [usuarioId, tmdb_id, tipo, titulo, poster_url, nota || null]
         );
@@ -77,7 +73,6 @@ const addFavorite = async (req, res) => {
     }
 };
 
-// DELETE /api/users/favorites/:tmdbId - Remover favorito
 const removeFavorite = async (req, res) => {
     const usuarioId = req.usuarioId;
     const { tmdbId } = req.params;
@@ -89,7 +84,7 @@ const removeFavorite = async (req, res) => {
 
     try {
         const result = await pool.query(
-            'DELETE FROM favoritos WHERE usuario_id = $1 AND tmdb_id = $2 AND tipo = $3 RETURNING id',
+            'DELETE FROM favorito WHERE usuario_id = $1 AND tmdb_id = $2 AND tipo = $3 RETURNING id',
             [usuarioId, tmdbId, tipo || 'filme']
         );
 
@@ -107,21 +102,18 @@ const removeFavorite = async (req, res) => {
 
 // ==================== LISTAS ====================
 
-// GET /api/users/lists - Listar todas as listas com itens
 const getLists = async (req, res) => {
     const usuarioId = req.usuarioId;
 
     try {
-        // Buscar todas as listas do usuário
         const listasResult = await pool.query(
             `SELECT id, nome, descricao, criado_em 
-             FROM listas 
+             FROM lista 
              WHERE usuario_id = $1 
              ORDER BY criado_em DESC`,
             [usuarioId]
         );
 
-        // Para cada lista, buscar seus itens
         const listas = [];
         for (const lista of listasResult.rows) {
             const itensResult = await pool.query(
@@ -130,11 +122,11 @@ const getLists = async (req, res) => {
                     tipo,
                     titulo,
                     poster_url,
-                    nota,
+                    ordem,
                     adicionado_em
-                 FROM lista_itens 
+                 FROM lista_item 
                  WHERE lista_id = $1 
-                 ORDER BY adicionado_em ASC`,
+                 ORDER BY ordem ASC`,
                 [lista.id]
             );
 
@@ -148,7 +140,7 @@ const getLists = async (req, res) => {
                     tipo: item.tipo,
                     titulo: item.titulo,
                     poster_url: item.poster_url,
-                    nota: item.nota
+                    ordem: item.ordem
                 }))
             });
         }
@@ -161,7 +153,6 @@ const getLists = async (req, res) => {
     }
 };
 
-// POST /api/users/lists - Criar nova lista
 const createList = async (req, res) => {
     const usuarioId = req.usuarioId;
     const { nome, descricao } = req.body;
@@ -172,7 +163,7 @@ const createList = async (req, res) => {
 
     try {
         const result = await pool.query(
-            `INSERT INTO listas (usuario_id, nome, descricao, criado_em)
+            `INSERT INTO lista (usuario_id, nome, descricao, criado_em)
              VALUES ($1, $2, $3, NOW())
              RETURNING id, nome, descricao, criado_em`,
             [usuarioId, nome, descricao || null]
@@ -194,15 +185,13 @@ const createList = async (req, res) => {
     }
 };
 
-// DELETE /api/users/lists/:listId - Deletar lista
 const deleteList = async (req, res) => {
     const usuarioId = req.usuarioId;
     const { listId } = req.params;
 
     try {
-        // Verificar se a lista pertence ao usuário
         const listaCheck = await pool.query(
-            'SELECT id FROM listas WHERE id = $1 AND usuario_id = $2',
+            'SELECT id FROM lista WHERE id = $1 AND usuario_id = $2',
             [listId, usuarioId]
         );
 
@@ -210,8 +199,7 @@ const deleteList = async (req, res) => {
             return res.status(404).json({ error: 'Lista não encontrada' });
         }
 
-        // Deletar a lista (itens serão deletados em cascata)
-        await pool.query('DELETE FROM listas WHERE id = $1', [listId]);
+        await pool.query('DELETE FROM lista WHERE id = $1', [listId]);
 
         res.status(200).json({ message: 'Lista deletada com sucesso' });
 
@@ -221,20 +209,18 @@ const deleteList = async (req, res) => {
     }
 };
 
-// POST /api/users/lists/:listId/items - Adicionar item à lista
 const addToList = async (req, res) => {
     const usuarioId = req.usuarioId;
     const { listId } = req.params;
-    const { tmdb_id, tipo, titulo, poster_url, nota } = req.body;
+    const { tmdb_id, tipo, titulo, poster_url } = req.body;
 
     if (!tmdb_id || !tipo || !titulo) {
         return res.status(400).json({ error: 'tmdb_id, tipo e titulo são obrigatórios' });
     }
 
     try {
-        // Verificar se a lista pertence ao usuário
         const listaCheck = await pool.query(
-            'SELECT id FROM listas WHERE id = $1 AND usuario_id = $2',
+            'SELECT id FROM lista WHERE id = $1 AND usuario_id = $2',
             [listId, usuarioId]
         );
 
@@ -242,9 +228,8 @@ const addToList = async (req, res) => {
             return res.status(404).json({ error: 'Lista não encontrada' });
         }
 
-        // Verificar se já existe na lista
         const existing = await pool.query(
-            'SELECT id FROM lista_itens WHERE lista_id = $1 AND tmdb_id = $2 AND tipo = $3',
+            'SELECT id FROM lista_item WHERE lista_id = $1 AND tmdb_id = $2 AND tipo = $3',
             [listId, tmdb_id, tipo]
         );
 
@@ -252,11 +237,16 @@ const addToList = async (req, res) => {
             return res.status(409).json({ error: 'Item já está nesta lista' });
         }
 
-        // Adicionar à lista
+        const ordemResult = await pool.query(
+            'SELECT COALESCE(MAX(ordem), 0) + 1 AS proxima FROM lista_item WHERE lista_id = $1',
+            [listId]
+        );
+        const proxima = ordemResult.rows[0].proxima;
+
         await pool.query(
-            `INSERT INTO lista_itens (lista_id, tmdb_id, tipo, titulo, poster_url, nota, adicionado_em)
+            `INSERT INTO lista_item (lista_id, tmdb_id, tipo, titulo, poster_url, ordem, adicionado_em)
              VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-            [listId, tmdb_id, tipo, titulo, poster_url, nota || null]
+            [listId, tmdb_id, tipo, titulo, poster_url, proxima]
         );
 
         res.status(201).json({ message: 'Item adicionado à lista' });
@@ -267,16 +257,14 @@ const addToList = async (req, res) => {
     }
 };
 
-// DELETE /api/users/lists/:listId/items/:tmdbId - Remover item da lista
 const removeFromList = async (req, res) => {
     const usuarioId = req.usuarioId;
     const { listId, tmdbId } = req.params;
     const { tipo } = req.query;
 
     try {
-        // Verificar se a lista pertence ao usuário
         const listaCheck = await pool.query(
-            'SELECT id FROM listas WHERE id = $1 AND usuario_id = $2',
+            'SELECT id FROM lista WHERE id = $1 AND usuario_id = $2',
             [listId, usuarioId]
         );
 
@@ -284,9 +272,8 @@ const removeFromList = async (req, res) => {
             return res.status(404).json({ error: 'Lista não encontrada' });
         }
 
-        // Remover item da lista
         const result = await pool.query(
-            'DELETE FROM lista_itens WHERE lista_id = $1 AND tmdb_id = $2 AND tipo = $3 RETURNING id',
+            'DELETE FROM lista_item WHERE lista_id = $1 AND tmdb_id = $2 AND tipo = $3 RETURNING id',
             [listId, tmdbId, tipo || 'filme']
         );
 
