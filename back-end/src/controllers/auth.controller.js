@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../db');
 
-// ==================== CADASTRO ====================
 const signupUser = async (req, res) => {
     const { nome, email, senha } = req.body;
 
@@ -16,9 +15,8 @@ const signupUser = async (req, res) => {
     }
 
     try {
-        // Verificar se email já existe
         const existingUser = await pool.query(
-            'SELECT id FROM usuarios WHERE email = $1',
+            'SELECT id FROM usuario WHERE email = $1',
             [email.toLowerCase()]
         );
 
@@ -26,13 +24,11 @@ const signupUser = async (req, res) => {
             return res.status(409).json({ error: 'Email já cadastrado' });
         }
 
-        // Hash da senha
         const salt = await bcrypt.genSalt(10);
         const senhaHash = await bcrypt.hash(senha, salt);
 
-        // Criar usuário
         const result = await pool.query(
-            `INSERT INTO usuarios (nome, email, senha_hash, criado_em) 
+            `INSERT INTO usuario (nome, email, senha_hash, criado_em) 
              VALUES ($1, $2, $3, NOW()) 
              RETURNING id, nome, email, criado_em`,
             [nome, email.toLowerCase(), senhaHash]
@@ -40,16 +36,14 @@ const signupUser = async (req, res) => {
 
         const usuario = result.rows[0];
 
-        // Gerar token JWT
         const token = jwt.sign(
             { id: usuario.id, email: usuario.email },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
 
-        // Registrar sessão ativa
         await pool.query(
-            `INSERT INTO sessoes (usuario_id, token, expira_em, criado_em)
+            `INSERT INTO sessao (usuario_id, token, expira_em, criado_em)
              VALUES ($1, $2, NOW() + INTERVAL '7 days', NOW())`,
             [usuario.id, token]
         );
@@ -69,7 +63,6 @@ const signupUser = async (req, res) => {
     }
 };
 
-// ==================== LOGIN ====================
 const loginUser = async (req, res) => {
     const { email, senha } = req.body;
 
@@ -79,7 +72,7 @@ const loginUser = async (req, res) => {
 
     try {
         const result = await pool.query(
-            'SELECT id, nome, email, senha_hash FROM usuarios WHERE email = $1',
+            'SELECT id, nome, email, senha_hash FROM usuario WHERE email = $1',
             [email.toLowerCase()]
         );
 
@@ -100,9 +93,8 @@ const loginUser = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        // Registrar sessão ativa
         await pool.query(
-            `INSERT INTO sessoes (usuario_id, token, expira_em, criado_em)
+            `INSERT INTO sessao (usuario_id, token, expira_em, criado_em)
              VALUES ($1, $2, NOW() + INTERVAL '7 days', NOW())`,
             [usuario.id, token]
         );
@@ -122,14 +114,15 @@ const loginUser = async (req, res) => {
     }
 };
 
-// ==================== LOGOUT ====================
 const logoutUser = async (req, res) => {
     const usuarioId = req.usuarioId;
     const token = req.token;
 
     try {
-        // Invalidar sessão (remover token)
-        await pool.query('DELETE FROM sessoes WHERE usuario_id = $1 AND token = $2', [usuarioId, token]);
+        await pool.query(
+            'DELETE FROM sessao WHERE usuario_id = $1 AND token = $2',
+            [usuarioId, token]
+        );
 
         res.status(200).json({ message: 'Logout realizado com sucesso' });
 
