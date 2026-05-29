@@ -183,10 +183,12 @@ export async function discoverTitles(params: DiscoverParams): Promise<{ results:
 }
 
 export async function getTopTen(type: MediaType | "" = "") {
-  if (type === 'tv') {
-    return fetchAPI<{ results: Title[] }>('/api/top/tv');
-  }
-  return fetchAPI<{ results: Title[] }>('/api/top/movie');
+  const params = new URLSearchParams();
+  if (type) params.append("type", type);
+  const query = params.toString() ? `?${params.toString()}` : "";
+
+  // ✅ CORRETO: /api/top10
+  return fetchAPI<{ results: Title[] }>(`/api/top/${type}${query}`);
 }
 
 export async function getSimilar(id: string | number, type: MediaType = "movie") {
