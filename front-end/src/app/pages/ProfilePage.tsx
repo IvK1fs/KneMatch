@@ -19,21 +19,6 @@ import { motion } from 'motion/react';
 
 type Tab = 'favorites' | 'lists' | 'settings';
 
-const MOCK_FAVORITES = [
-  { id: 101, title: 'Dune: Part Two', image: 'https://image.tmdb.org/t/p/w342/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg', rating: 8.4, type: 'movie' as const },
-  { id: 102, title: 'Oppenheimer', image: 'https://image.tmdb.org/t/p/w342/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', rating: 8.9, type: 'movie' as const },
-  { id: 103, title: 'The Bear', image: 'https://image.tmdb.org/t/p/w342/sHFlbKS3WLqMnp9t2ghADIJFnuQ.jpg', rating: 8.7, type: 'series' as const },
-  { id: 104, title: 'Shogun', image: 'https://image.tmdb.org/t/p/w342/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg', rating: 9.0, type: 'series' as const },
-  { id: 105, title: 'Poor Things', image: 'https://image.tmdb.org/t/p/w342/kCGlIMHnOm8JPXIf6Gq69FMQK3U.jpg', rating: 8.0, type: 'movie' as const },
-  { id: 106, title: 'Fallout', image: 'https://image.tmdb.org/t/p/w342/AnsSKr3B6Gt9jX2CTTAG9UKRYKi.jpg', rating: 8.5, type: 'series' as const },
-];
-
-const MOCK_LIST_ITEMS = [
-  { id: 201, title: 'Interstellar', image: 'https://image.tmdb.org/t/p/w342/gEU2QniE6E77NI6lCU6MxlNBvIE.jpg', rating: 8.7, type: 'movie' as const },
-  { id: 202, title: 'Breaking Bad', image: 'https://image.tmdb.org/t/p/w342/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', rating: 9.5, type: 'series' as const },
-  { id: 203, title: 'The Dark Knight', image: 'https://image.tmdb.org/t/p/w342/qJ2tW6WMUDux911r6m7haRef0WH.jpg', rating: 9.0, type: 'movie' as const },
-];
-
 function PosterGrid({ images }: { images: string[] }) {
   const slots = [...images, ...Array(4).fill('')].slice(0, 4);
   return (
@@ -66,7 +51,7 @@ function TypeBadge({ type }: { type: 'movie' | 'series' }) {
 export function ProfilePage() {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user, logout, favorites: rawFavorites, lists: rawLists, removeFavorite, createList, deleteList, removeFromList } = useAuth();
+  const { user, logout, favorites, lists, removeFavorite, createList, deleteList, removeFromList } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<Tab>('favorites');
@@ -75,13 +60,6 @@ export function ProfilePage() {
   const [newListDesc, setNewListDesc] = useState('');
   const [openListId, setOpenListId] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'series'>('all');
-
-  // Merge real data with mock demo data for a richer display
-  const favorites = rawFavorites.length > 0 ? rawFavorites : MOCK_FAVORITES;
-  const lists = rawLists.length > 0 ? rawLists : [
-    { id: 'mock-1', name: 'Para Assistir', description: 'Filmes e séries que quero ver em breve', items: MOCK_LIST_ITEMS },
-    { id: 'mock-2', name: 'Sci-Fi Favoritos', description: 'Melhores obras de ficção científica', items: MOCK_LIST_ITEMS.slice(0, 2) },
-  ];
 
   const demoUser = user ?? {
     id: 'demo',
@@ -124,7 +102,6 @@ export function ProfilePage() {
       {/* Hero Banner */}
       <div className="relative">
         <div className="h-48 bg-gradient-to-br from-[#1a0a1a] via-[#0f0f2a] to-[#0a1a1a] overflow-hidden">
-          {/* Decorative poster strip */}
           <div className="absolute inset-0 flex gap-1 opacity-15 overflow-hidden">
             {favorites.map((f, i) => (
               <div key={i} className="flex-shrink-0 w-16 h-full">
@@ -135,10 +112,8 @@ export function ProfilePage() {
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0f]/60 to-[#0a0a0f]" />
         </div>
 
-        {/* Profile card overlapping banner */}
         <div className="container mx-auto px-4 max-w-5xl">
           <div className="relative -mt-16 pb-6 flex flex-col sm:flex-row items-start sm:items-end gap-4">
-            {/* Avatar */}
             <div className="relative flex-shrink-0">
               <div className="w-28 h-28 rounded-2xl overflow-hidden ring-4 ring-[#0a0a0f] shadow-2xl">
                 <img src={demoUser.avatar} alt={demoUser.name} className="w-full h-full object-cover" />
@@ -146,7 +121,6 @@ export function ProfilePage() {
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full ring-2 ring-[#0a0a0f]" />
             </div>
 
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold text-white">{demoUser.name}</h1>
               <p className="text-white/50 text-sm">{demoUser.email}</p>
@@ -249,7 +223,6 @@ export function ProfilePage() {
                         alt={item.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
-                      {/* Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <button
                           onClick={() => removeFavorite(item.id)}
@@ -263,12 +236,13 @@ export function ProfilePage() {
                           <h3 className="text-white font-medium text-xs mt-1 line-clamp-2">{item.title}</h3>
                           <div className="flex items-center gap-1 mt-1">
                             <Star className="w-3 h-3 text-yellow-400" fill="currentColor" />
-                            <span className="text-yellow-400 text-xs font-semibold">{item.rating.toFixed(1)}</span>
+                            <span className="text-yellow-400 text-xs font-semibold">
+                              {item.rating != null ? item.rating.toFixed(1) : '—'}
+                            </span>
                           </div>
                         </div>
                       </div>
                     </div>
-                    {/* Type indicator dot */}
                     <div className={`absolute top-2 left-2 w-2 h-2 rounded-full opacity-80 ${
                       item.type === 'movie' ? 'bg-blue-400' : 'bg-purple-400'
                     }`} />
@@ -282,7 +256,6 @@ export function ProfilePage() {
         {/* Tab: Minhas Listas */}
         {activeTab === 'lists' && (
           <div className="pb-16">
-            {/* List detail view */}
             <div>
               {openList ? (
                 <motion.div
@@ -348,7 +321,9 @@ export function ProfilePage() {
                             <h3 className="text-white font-medium text-sm line-clamp-1">{item.title}</h3>
                             <div className="flex items-center gap-1 mt-0.5">
                               <Star className="w-3 h-3 text-yellow-400" fill="currentColor" />
-                              <span className="text-yellow-400 text-xs">{item.rating.toFixed(1)}</span>
+                              <span className="text-yellow-400 text-xs">
+                                {item.rating != null ? item.rating.toFixed(1) : '—'}
+                              </span>
                             </div>
                           </div>
                           <button
@@ -469,7 +444,6 @@ export function ProfilePage() {
                         </motion.button>
                       ))}
 
-                      {/* Create new list card */}
                       <button
                         onClick={() => setIsCreateListOpen(true)}
                         className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border border-dashed border-white/10 hover:border-[#e50914]/40 hover:bg-[#e50914]/5 transition-all text-white/30 hover:text-white/60"
@@ -491,7 +465,6 @@ export function ProfilePage() {
         {activeTab === 'settings' && (
           <div className="pb-16 max-w-lg">
             <div className="space-y-3">
-              {/* Theme */}
               <div className="flex items-center justify-between p-4 rounded-2xl bg-white/3 border border-white/5">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center">
@@ -505,7 +478,6 @@ export function ProfilePage() {
                 <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
               </div>
 
-              {/* Language */}
               <div className="p-4 rounded-2xl bg-white/3 border border-white/5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center">
@@ -533,7 +505,6 @@ export function ProfilePage() {
                 </div>
               </div>
 
-              {/* Account info */}
               <div className="p-4 rounded-2xl bg-white/3 border border-white/5">
                 <p className="text-white/40 text-xs uppercase tracking-widest mb-3 font-medium">Conta</p>
                 <div className="space-y-3">
@@ -552,7 +523,6 @@ export function ProfilePage() {
                 </div>
               </div>
 
-              {/* Danger zone */}
               <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/15">
                 <p className="text-red-400/70 text-xs uppercase tracking-widest mb-3 font-medium">Zona de perigo</p>
                 <Button

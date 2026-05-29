@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router";
+import { Heart, Plus, Check, X, List } from "lucide-react";
 import {
   getDetails,
   getCast,
@@ -11,6 +12,7 @@ import {
   type Video,
   type Provider,
 } from "../../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w185";
 const TMDB_LOGO_BASE = "https://image.tmdb.org/t/p/w92";
@@ -54,12 +56,17 @@ export default function DetailsPage() {
   const [searchParams] = useSearchParams();
   const type = (searchParams.get("type") as MediaType) ?? "movie";
 
+  const { user, favorites, lists, addFavorite, removeFavorite, addToList } = useAuth();
+
   const [details, setDetails] = useState<TitleDetails | null>(null);
   const [cast, setCast] = useState<CastMember[]>([]);
   const [trailer, setTrailer] = useState<Video | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [favLoading, setFavLoading] = useState(false);
+  const [listModalOpen, setListModalOpen] = useState(false);
+  const [addedToList, setAddedToList] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -85,6 +92,41 @@ export default function DetailsPage() {
 
   const displayTitle = details?.title ?? details?.name ?? "Título";
   const year = (details?.release_date ?? details?.first_air_date ?? "").slice(0, 4);
+
+  const numericId = Number(id);
+  const isFav = favorites.some(f => f.id === numericId);
+
+  const currentItem = details ? {
+    id: numericId,
+    title: displayTitle,
+    image: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : '',
+    rating: details.vote_average,
+    type: type === 'movie' ? 'movie' as const : 'series' as const,
+  } : null;
+
+  const handleFavorite = async () => {
+    if (!user || !currentItem) return;
+    setFavLoading(true);
+    try {
+      if (isFav) {
+        await removeFavorite(numericId);
+      } else {
+        await addFavorite(currentItem);
+      }
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
+  const handleAddToList = async (listId: string) => {
+    if (!currentItem) return;
+    await addToList(listId, currentItem);
+    setAddedToList(listId);
+    setTimeout(() => {
+      setAddedToList(null);
+      setListModalOpen(false);
+    }, 1000);
+  };
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
@@ -166,6 +208,85 @@ export default function DetailsPage() {
               </div>
             ) : (
               <p className="leading-relaxed text-zinc-300">{details?.overview || "Sinopse não disponível."}</p>
+            )}
+
+            {/* Botões de ação — só aparecem para usuários logados */}
+            {!loading && user && (
+              <div className="flex flex-wrap gap-3 mt-2">
+                <button
+                  onClick={handleFavorite}
+                  disabled={favLoading}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+                    isFav
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                  }`}
+                >
+                  <Heart className="w-4 h-4" fill={isFav ? 'currentColor' : 'none'} />
+                  {isFav ? 'Favoritado' : 'Favoritar'}
+                </button>
+
+                <div className="relative">
+                  <button
+                    onClick={() => setListModalOpen(prev => !prev)}
+                    className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all"
+                  >
+                    <List className="w-4 h-4" />
+                    Adicionar à lista
+                  </button>
+
+                  {listModalOpen && (
+                    <div className="absolute left-0 top-full mt-2 z-50 w-64 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-2xl overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+                        <span className="text-sm font-semibold text-white">Suas listas</span>
+                        <button onClick={() => setListModalOpen(false)} className="text-zinc-500 hover:text-white">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {lists.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-sm text-zinc-500">
+                          Nenhuma lista criada ainda.{" "}
+                          <Link to="/profile" className="text-red-400 hover:underline" onClick={() => setListModalOpen(false)}>
+                            Criar lista
+                          </Link>
+                        </div>
+                      ) : (
+                        <ul>
+                          {lists.map(list => {
+                            const alreadyIn = list.items.some(i => i.id === numericId);
+                            const justAdded = addedToList === list.id;
+                            return (
+                              <li key={list.id}>
+                                <button
+                                  onClick={() => !alreadyIn && handleAddToList(list.id)}
+                                  disabled={alreadyIn}
+                                  className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
+                                    alreadyIn
+                                      ? 'text-zinc-600 cursor-default'
+                                      : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
+                                  }`}
+                                >
+                                  <div className="text-left">
+                                    <p className="font-medium">{list.name}</p>
+                                    <p className="text-xs text-zinc-600">{list.items.length} itens</p>
+                                  </div>
+                                  {justAdded ? (
+                                    <Check className="w-4 h-4 text-green-400" />
+                                  ) : alreadyIn ? (
+                                    <Check className="w-4 h-4 text-zinc-600" />
+                                  ) : (
+                                    <Plus className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>

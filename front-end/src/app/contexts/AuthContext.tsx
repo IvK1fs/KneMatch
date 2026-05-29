@@ -41,20 +41,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const API_URL = (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_URL ?? '';
+
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('user');
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [favorites, setFavorites] = useState<Favorite[]>(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [lists, setLists] = useState<List[]>(() => {
-    const saved = localStorage.getItem('lists');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [lists, setLists] = useState<List[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -65,17 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    localStorage.setItem('favorites', JSON.stringify(favorites));
-  }, [favorites]);
-
-  useEffect(() => {
-    localStorage.setItem('lists', JSON.stringify(lists));
-  }, [lists]);
-
-  // Carrega favoritos e listas do banco quando o usuário loga
-  useEffect(() => {
     if (!user) return;
     const token = localStorage.getItem('token');
+    if (!token) return;
 
     fetch(`${API_URL}/api/users/favorites`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -99,11 +86,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
-      .then(d => setLists(d.lists ?? []))
+      .then(d => {
+        const mapped: List[] = (d.lists ?? []).map((l: {
+          id: string | number; nome: string; descricao: string;
+          itens?: Array<{ tmdb_id: string; titulo: string; poster_url: string; nota: number; tipo: string }>;
+        }) => ({
+          id: String(l.id),
+          name: l.nome,
+          description: l.descricao ?? '',
+          items: (l.itens ?? []).map(i => ({
+            id: Number(i.tmdb_id),
+            title: i.titulo,
+            image: i.poster_url,
+            rating: i.nota,
+            type: i.tipo === 'filme' ? 'movie' : 'series',
+          })),
+        }));
+        setLists(mapped);
+      })
       .catch(() => {});
-  }, [user]);
-
-  const API_URL = (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_URL ?? '';
+  }, [user?.id]);
 
   const login = async (email: string, password: string) => {
     const res = await fetch(`${API_URL}/api/auth/login`, {
@@ -148,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers: { Authorization: `Bearer ${token}` },
         });
       } catch {
-        // silently ignore logout errors
+        // silently ignore
       }
     }
     localStorage.removeItem('token');
@@ -157,7 +159,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLists([]);
   };
 
-  // RF — Favoritos conectados ao backend
   const addFavorite = async (item: Favorite) => {
     if (favorites.find(f => f.id === item.id)) return;
     const token = localStorage.getItem('token');
@@ -184,7 +185,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setFavorites(prev => prev.filter(f => f.id !== id));
   };
 
-  // RF — Listas conectadas ao backend
   const createList = async (name: string, description: string) => {
     const token = localStorage.getItem('token');
     const res = await fetch(`${API_URL}/api/users/lists`, {
@@ -194,7 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await res.json();
     const newList: List = {
-      id: String(data.id ?? Date.now()),
+      id: String(data.lista?.id ?? Date.now()),
       name,
       description,
       items: [],
@@ -225,11 +225,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }),
     });
     setLists(prev => prev.map(list => {
-      if (list.id === listId) {
-        if (list.items.find(i => i.id === item.id)) return list;
-        return { ...list, items: [...list.items, item] };
-      }
-      return list;
+      if (list.id !== listId) return list;
+      if (list.items.find(i => i.id === item.id)) return list;
+      return { ...list, items: [...list.items, item] };
     }));
   };
 
@@ -240,10 +238,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { Authorization: `Bearer ${token}` },
     });
     setLists(prev => prev.map(list => {
-      if (list.id === listId) {
-        return { ...list, items: list.items.filter(i => i.id !== itemId) };
-      }
-      return list;
+      if (list.id !== listId) return list;
+      return { ...list, items: list.items.filter(i => i.id !== itemId) };
     }));
   };
 
