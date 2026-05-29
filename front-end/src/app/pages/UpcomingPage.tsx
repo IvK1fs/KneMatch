@@ -109,7 +109,7 @@ export default function UpcomingPage() {
       setLoading(true);
       setErro(false);
       try {
-        const data = await getUpcoming(); // ← vem do src/services/api.ts
+        const data = await getUpcoming();
         setFilmes(data.results);
       } catch (err) {
         console.error("[UpcomingPage] getUpcoming falhou:", err);
@@ -122,14 +122,26 @@ export default function UpcomingPage() {
   }, []);
 
   const ordenados = [...filmes].sort((a, b) => {
-    if (ordenar === "data") {
-      const da = a.release_date ?? a.first_air_date ?? "";
-      const db = b.release_date ?? b.first_air_date ?? "";
-      return da.localeCompare(db);
+    if (ordenar === "titulo") {
+      const ta = a.title ?? a.name ?? "";
+      const tb = b.title ?? b.name ?? "";
+      return ta.localeCompare(tb);
     }
-    const ta = a.title ?? a.name ?? "";
-    const tb = b.title ?? b.name ?? "";
-    return ta.localeCompare(tb);
+
+    // Ordenação por data: futuros primeiro (crescente), já lançados depois
+    const da = a.release_date ?? a.first_air_date ?? "";
+    const db = b.release_date ?? b.first_air_date ?? "";
+    const hoje = new Date().toISOString().slice(0, 10);
+
+    const aFuturo = da >= hoje;
+    const bFuturo = db >= hoje;
+
+    // Ambos futuros: mais próximo primeiro
+    if (aFuturo && bFuturo) return da.localeCompare(db);
+    // Ambos lançados: mais recente primeiro
+    if (!aFuturo && !bFuturo) return db.localeCompare(da);
+    // Futuro sempre vem antes do lançado
+    return aFuturo ? -1 : 1;
   });
 
   return (
@@ -137,7 +149,6 @@ export default function UpcomingPage() {
 
       <main style={{ maxWidth: 860, margin: "0 auto", padding: "24px 16px" }}>
 
-        {/* Título */}
         <div style={{ marginBottom: 24 }}>
           <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#1F4E79" }}>
             🗓️ Lançamentos Futuros
@@ -147,7 +158,6 @@ export default function UpcomingPage() {
           </p>
         </div>
 
-        {/* Ordenação */}
         <div style={{ display: "flex", gap: 8, marginBottom: 20, alignItems: "center" }}>
           <span style={{ fontSize: 13, color: "#666" }}>Ordenar por:</span>
           {(["data", "titulo"] as const).map((op) => (
@@ -166,7 +176,6 @@ export default function UpcomingPage() {
           ))}
         </div>
 
-        {/* Conteúdo */}
         {loading && <Spinner />}
 
         {erro && (
