@@ -28,7 +28,7 @@ export function Header() {
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/" className={`${isActive('/')} transition-colors`}>{t('header.home')}</Link>
-            <Link to="/upcoming-showcase" className={`${isActive('/upcoming-showcase')} transition-colors`}>{t('header.upcoming')}</Link>
+            <Link to="/upcoming" className={`${isActive('/upcoming-showcase')} transition-colors`}>{t('header.upcoming')}</Link>
             <Link to="/top-10" className={`${isActive('/top-10')} transition-colors`}>{t('header.ranking')}</Link>
             <Link to="/search?type=movie" className={`${isActive('/search')} transition-colors`}>{t('header.movies')}</Link>
             <Link to="/search?type=tv" className={`${isActive('/search')} transition-colors`}>{t('header.series')}</Link>
