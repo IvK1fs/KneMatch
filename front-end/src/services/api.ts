@@ -127,12 +127,23 @@ export async function getTopTen(type: MediaType | "" = "") {
   const params = new URLSearchParams();
   if (type) params.append("type", type);
   return fetchAPI<{ results: Title[] }>(`/api/top?${params.toString()}`);
-  const query = params.toString() ? `?${params.toString()}` : "";
-
-  // ✅ CORRETO: /api/top10
-  return fetchAPI<{ results: Title[] }>(`/api/top/${type}${query}`);
 }
 
 export async function getSimilar(id: string | number, type: MediaType = "movie") {
   return fetchAPI<{ results: Title[] }>(`/api/details/${id}/similar?type=${type}`);
+}
+
+export async function getPersonalRecommendations(): Promise<{ results: any[]; media_type: string }> {
+  const token = localStorage.getItem('token');
+  //Sem token não tenta requisição — retorna vazio silenciosamente
+  if (!token) return { results: [], media_type: 'movie' };
+
+  const BASE_URL = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:3001';
+
+  const response = await fetch(`${BASE_URL}/api/users/recommendations`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) return { results: [], media_type: 'movie' };
+  return response.json();
 }

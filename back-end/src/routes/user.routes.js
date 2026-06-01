@@ -10,16 +10,19 @@ const {
     createList,
     deleteList,
     addToList,
-    removeFromList
+    removeFromList,
+    getRecommendations
 } = require('../controllers/user.controller');
 
-// Todas as rotas de usuário exigem autenticação
 router.use(authMiddleware);
 
 // Favoritos
 router.get('/favorites', getFavorites);
 router.post('/favorites', addFavorite);
 router.delete('/favorites/:tmdbId', removeFavorite);
+
+//Requer usuário logado — retorna até 12 títulos baseados nos gêneros dos favoritos
+router.get('/recommendations', getRecommendations);
 
 // Listas
 router.get('/lists', getLists);
