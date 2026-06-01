@@ -1,16 +1,52 @@
-import { Film, Tv, Sparkles, TrendingUp, Heart, Clock } from 'lucide-react';
+import { Film, Tv, TrendingUp, Sparkles, Heart, List } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Categories() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const categories = [
-    { name: t('categories.movies'), icon: Film, color: 'bg-blue-500' },
-    { name: t('categories.series'), icon: Tv, color: 'bg-purple-500' },
-    { name: t('categories.popular'), icon: TrendingUp, color: 'bg-red-500' },
-    { name: t('categories.new'), icon: Sparkles, color: 'bg-green-500' },
-    { name: t('categories.favorites'), icon: Heart, color: 'bg-pink-500' },
-    { name: t('categories.watchLater'), icon: Clock, color: 'bg-orange-500' },
+    {
+      name: t('categories.movies'),
+      icon: Film,
+      color: 'bg-blue-500',
+      action: () => navigate('/search?type=movie'),
+    },
+    {
+      name: t('categories.series'),
+      icon: Tv,
+      color: 'bg-purple-500',
+      action: () => navigate('/search?type=tv'),
+    },
+    {
+      name: t('categories.popular'),
+      icon: TrendingUp,
+      color: 'bg-red-500',
+      action: () => navigate('/top-10'),
+    },
+    {
+      name: t('categories.new'),
+      icon: Sparkles,
+      color: 'bg-green-500',
+      action: () => navigate('/upcoming'),
+    },
+    {
+      name: t('categories.favorites'),
+      icon: Heart,
+      color: 'bg-pink-500',
+      //Redireciona para perfil na aba favoritos ou para login
+      action: () => navigate(isAuthenticated ? '/profile?tab=favorites' : '/login'),
+    },
+    {
+      name: 'Minhas Listas',
+      icon: List,
+      color: 'bg-orange-500',
+      //Redireciona para perfil na aba listas ou para login
+      action: () => navigate(isAuthenticated ? '/profile?tab=lists' : '/login'),
+    },
   ];
 
   return (
@@ -24,6 +60,7 @@ export function Categories() {
             return (
               <button
                 key={category.name}
+                onClick={category.action}
                 className="group relative overflow-hidden rounded-lg p-6 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 border border-gray-300 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/20 transition-all"
               >
                 <div className={`${category.color} w-12 h-12 rounded-full flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform`}>
