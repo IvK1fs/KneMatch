@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router";
-import { Heart, Plus, Check, X, List } from "lucide-react";
+import { Heart, Plus, Check, X, List, Share2, MessageCircle, XIcon } from "lucide-react";
 import {
   getDetails,
   getCast,
   getVideos,
   getProviders,
+  getSimilar,
   type TitleDetails,
   type MediaType,
   type CastMember,
   type Video,
   type Provider,
+  type Title,
 } from "../../services/api";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -51,6 +53,52 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function ShareButtons({ title }: { title: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = window.location.href;
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`Olha esse título no CineMatch: ${url}`)}`;
+  const twitterUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(`Olha esse título no CineMatch: ${url}`)}`;
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-4">
+      <button
+        onClick={handleCopy}
+        className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all"
+      >
+        <Share2 className="w-4 h-4" />
+        {copied ? "Link copiado!" : "Compartilhar"}
+      </button>
+      
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all"
+      >
+        <MessageCircle className="w-4 h-4" />
+        WhatsApp
+      </a>
+      
+      <a
+        href={twitterUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all"
+      >
+        <XIcon className="w-4 h-4" />
+        X
+      </a>
+    </div>
+  );
+}
+
 export default function DetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -62,6 +110,7 @@ export default function DetailsPage() {
   const [cast, setCast] = useState<CastMember[]>([]);
   const [trailer, setTrailer] = useState<Video | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [similar, setSimilar] = useState<Title[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favLoading, setFavLoading] = useState(false);
@@ -78,13 +127,15 @@ export default function DetailsPage() {
       getCast(id, type),
       getVideos(id, type),
       getProviders(id, type),
+      getSimilar(id, type),
     ])
-      .then(([detailsData, castData, videosData, providersData]) => {
+      .then(([detailsData, castData, videosData, providersData, similarData]) => {
         setDetails(detailsData);
         setCast(castData.cast.slice(0, 5));
         const found = videosData.results.find((v) => v.type === "Trailer" && v.site === "YouTube");
         setTrailer(found ?? null);
         setProviders(providersData.results);
+        setSimilar((similarData.results ?? []).slice(0, 6));
       })
       .catch(() => setError("Não foi possível carregar os detalhes do título."))
       .finally(() => setLoading(false));
@@ -99,9 +150,9 @@ export default function DetailsPage() {
   const currentItem = details ? {
     id: numericId,
     title: displayTitle,
-    image: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : '',
+    image: details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : "",
     rating: details.vote_average,
-    type: type === 'movie' ? 'movie' as const : 'series' as const,
+    type: type === "movie" ? "movie" as const : "series" as const,
   } : null;
 
   const handleFavorite = async () => {
@@ -140,11 +191,6 @@ export default function DetailsPage() {
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-950" />
-        <nav aria-label="Navegação" className="absolute left-4 top-4 flex items-center gap-2 text-sm text-zinc-400">
-          <Link to="/" className="hover:text-white transition-colors">Home</Link>
-          <span>/</span>
-          <span className="text-white">{loading ? "Carregando..." : displayTitle}</span>
-        </nav>
       </div>
 
       <div className="mx-auto max-w-5xl px-4 pb-16 -mt-20 relative z-10">
@@ -210,7 +256,6 @@ export default function DetailsPage() {
               <p className="leading-relaxed text-zinc-300">{details?.overview || "Sinopse não disponível."}</p>
             )}
 
-            {/* Botões de ação — só aparecem para usuários logados */}
             {!loading && user && (
               <div className="flex flex-wrap gap-3 mt-2">
                 <button
@@ -218,12 +263,12 @@ export default function DetailsPage() {
                   disabled={favLoading}
                   className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
                     isFav
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
                   }`}
                 >
-                  <Heart className="w-4 h-4" fill={isFav ? 'currentColor' : 'none'} />
-                  {isFav ? 'Favoritado' : 'Favoritar'}
+                  <Heart className="w-4 h-4" fill={isFav ? "currentColor" : "none"} />
+                  {isFav ? "Favoritado" : "Favoritar"}
                 </button>
 
                 <div className="relative">
@@ -262,8 +307,8 @@ export default function DetailsPage() {
                                   disabled={alreadyIn}
                                   className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
                                     alreadyIn
-                                      ? 'text-zinc-600 cursor-default'
-                                      : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
+                                      ? "text-zinc-600 cursor-default"
+                                      : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
                                   }`}
                                 >
                                   <div className="text-left">
@@ -288,6 +333,8 @@ export default function DetailsPage() {
                 </div>
               </div>
             )}
+
+            {!loading && <ShareButtons title={displayTitle} />}
           </div>
         </div>
 
@@ -366,6 +413,37 @@ export default function DetailsPage() {
             </p>
           )}
         </Section>
+
+        {!loading && similar.length > 0 && (
+          <Section title="Você também pode gostar">
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+              {similar.map((item) => {
+                const itemTitle = item.title ?? item.name ?? "Sem título";
+                const itemType = item.media_type ?? (item.first_air_date ? "tv" : "movie");
+                return (
+                  <Link
+                    key={item.id}
+                    to={`/details/${item.id}?type=${itemType}`}
+                    className="group flex flex-col gap-1"
+                  >
+                    {item.poster_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w185${item.poster_path}`}
+                        alt={itemTitle}
+                        className="w-full rounded-lg object-cover aspect-[2/3] bg-zinc-800 group-hover:opacity-80 transition-opacity"
+                      />
+                    ) : (
+                      <div className="w-full rounded-lg bg-zinc-800 aspect-[2/3] flex items-center justify-center text-zinc-600 text-xs">
+                        Sem imagem
+                      </div>
+                    )}
+                    <p className="text-xs text-zinc-400 truncate">{itemTitle}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          </Section>
+        )}
 
         {error && (
           <div className="mt-8 rounded-xl border border-red-800 bg-red-950/40 p-4 text-center text-red-400">
