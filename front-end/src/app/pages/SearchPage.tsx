@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../components/ui/badge';
 import { Slider } from '../components/ui/slider';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
 import { searchTitles, discoverTitles, getTrending, getUpcoming, getGenres, Title, Genre } from '../../services/api';
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w300';
@@ -41,6 +42,16 @@ const DEFAULT_FILTERS: FilterState = {
 
 export function SearchPage() {
   const { t } = useTranslation();
+
+  const [searchParams] = useSearchParams();
+
+useEffect(() => {
+  const type = searchParams.get('type');
+  //Aplica filtro de tipo vindo da URL ao montar a página
+  if (type === 'movie' || type === 'tv') {
+    setFilters(prev => ({ ...prev, type }));
+  }
+}, []);
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [inputValue, setInputValue] = useState('');

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Badge } from '../components/ui/badge';
 import { motion } from 'motion/react';
+
 
 type Tab = 'favorites' | 'lists' | 'settings';
 
@@ -55,6 +56,15 @@ export function ProfilePage() {
   const { theme, toggleTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<Tab>('favorites');
+  const [profileParams] = useSearchParams();
+
+useEffect(() => {
+  const tab = profileParams.get('tab') as Tab | null;
+  //Abre a aba correta quando vier de um link externo
+  if (tab && ['favorites', 'lists', 'settings'].includes(tab)) {
+    setActiveTab(tab);
+  }
+}, []);
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [newListDesc, setNewListDesc] = useState('');

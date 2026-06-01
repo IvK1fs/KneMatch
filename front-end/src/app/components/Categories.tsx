@@ -13,7 +13,6 @@ export function Categories() {
       name: t('categories.movies'),
       icon: Film,
       color: 'bg-blue-500',
-      //Busca filtrada por filmes
       action: () => navigate('/search?type=movie'),
     },
     {
@@ -38,14 +37,15 @@ export function Categories() {
       name: t('categories.favorites'),
       icon: Heart,
       color: 'bg-pink-500',
-      //Redireciona para login se não autenticado
-      action: () => navigate(isAuthenticated ? '/profile' : '/login'),
+      //Redireciona para perfil na aba favoritos ou para login
+      action: () => navigate(isAuthenticated ? '/profile?tab=favorites' : '/login'),
     },
     {
       name: 'Minhas Listas',
       icon: List,
       color: 'bg-orange-500',
-      action: () => navigate(isAuthenticated ? '/profile' : '/login'),
+      //Redireciona para perfil na aba listas ou para login
+      action: () => navigate(isAuthenticated ? '/profile?tab=lists' : '/login'),
     },
   ];
 
