@@ -4,6 +4,8 @@ const express = require('express');
 const cors = require('cors');
 
 // Importar rotas
+const { requestLogger } = require('./middleware/logger.middleware');
+const { errorLogger, notFoundHandler } = require('./middleware/error.middleware');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const searchRoutes = require('./routes/search.routes');
@@ -63,6 +65,13 @@ app.use('/api/details', detailsRoutes);
 app.use('/api/genres', genresRoutes);
 app.use('/api/discover', discoverRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
+
+
+// Middleware para rotas não encontradas (404)
+app.use(notFoundHandler);
+
+// Middleware global de erro (sempre por último)
+app.use(errorLogger);
 
 // ==================== SERVIDOR ====================
 app.listen(PORT, () => {
