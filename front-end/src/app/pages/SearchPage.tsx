@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Filter, X, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, X, Star, ChevronLeft, ChevronRight, User, Clapperboard } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -28,6 +28,9 @@ interface FilterState {
   page: number;
   year: string;
   rating: number;
+  cast: string;
+  director: string;
+  decade: string;
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -38,7 +41,12 @@ const DEFAULT_FILTERS: FilterState = {
   page: 1,
   year: '',
   rating: 0,
+  cast: '',
+  director: '',
+  decade: '',
 };
+
+const DECADES = ['1950', '1960', '1970', '1980', '1990', '2000', '2010', '2020'];
 
 export function SearchPage() {
   const { t } = useTranslation();
@@ -54,7 +62,12 @@ useEffect(() => {
 }, []);
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [yearMode, setYearMode] = useState<'year' | 'decade'>('year');
   const [inputValue, setInputValue] = useState('');
+  const [castInput, setCastInput] = useState('');
+  const [directorInput, setDirectorInput] = useState('');
+  const castDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const directorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFilters, setShowFilters] = useState(true);
 
   const [results, setResults] = useState<Title[]>([]);
@@ -96,19 +109,27 @@ useEffect(() => {
     let items: Title[] = [];
     let pages = 1;
 
-    if (f.q.trim()) {
+    const yearFrom = f.decade ? f.decade : f.year;
+    const yearTo   = f.decade ? String(parseInt(f.decade) + 9) : undefined;
+    const usesAdvancedFilters = !!(f.cast || f.director || f.decade);
+
+    if (f.q.trim() && !usesAdvancedFilters) {
       const data = await searchTitles(f.q, f.type);
       items = data.results ?? [];
       pages = (data as any).total_pages ?? 1;
     } else {
       try {
         const data = await discoverTitles({
+          q: f.q || undefined,
           type: f.type,
           genre: f.genre,
           sort: f.sort,
           page: f.page,
-          year: f.year,
+          year: yearFrom,
+          yearTo,
           rating: f.rating,
+          cast: f.cast || undefined,
+          director: f.director || undefined,
         });
         items = data.results ?? [];
         pages = data.total_pages ?? 1;
@@ -194,15 +215,36 @@ useEffect(() => {
 
   function clearFilters() {
     setInputValue('');
+    setCastInput('');
+    setDirectorInput('');
     setFilters(DEFAULT_FILTERS);
+    setYearMode('year');
+  }
+
+  function handleCastChange(value: string) {
+    setCastInput(value);
+    if (castDebounceRef.current) clearTimeout(castDebounceRef.current);
+    castDebounceRef.current = setTimeout(() => {
+      setFilters((f) => ({ ...f, cast: value, page: 1 }));
+    }, 600);
+  }
+
+  function handleDirectorChange(value: string) {
+    setDirectorInput(value);
+    if (directorDebounceRef.current) clearTimeout(directorDebounceRef.current);
+    directorDebounceRef.current = setTimeout(() => {
+      setFilters((f) => ({ ...f, director: value, page: 1 }));
+    }, 600);
   }
 
   const activeFiltersCount = [
     filters.type !== '',
     filters.genre !== '',
     filters.sort !== 'popularity.desc',
-    filters.year !== '',
+    filters.year !== '' || filters.decade !== '',
     filters.rating > 0,
+    filters.cast !== '',
+    filters.director !== '',
   ].filter(Boolean).length;
 
   const pageTitle = filters.q
@@ -322,7 +364,7 @@ useEffect(() => {
                       <SelectValue placeholder="Todos os gêneros" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos os gêneros</SelectItem>
+                      <SelectItem value="all">{t('search.allGenres')}</SelectItem>
                       {genres.map((g) => (
                         <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
                       ))}
@@ -330,23 +372,86 @@ useEffect(() => {
                   </Select>
                 </div>
 
-                {/* Ano */}
+                {/* RF04/RF16/RF17 — Ano / Década */}
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.yearFrom')}</label>
+                  <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.yearDecade')}</label>
+                  <div className="flex rounded-md overflow-hidden border border-gray-300 dark:border-gray-600 text-xs w-full">
+                    {(['year', 'decade'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => {
+                          setYearMode(mode);
+                          setFilters((f) => ({ ...f, year: '', decade: '', page: 1 }));
+                        }}
+                        className={`flex-1 py-1.5 transition-colors ${
+                          yearMode === mode
+                            ? 'bg-red-600 text-white'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {mode === 'year' ? t('search.year') : t('search.decade')}
+                      </button>
+                    ))}
+                  </div>
+                  {yearMode === 'year' ? (
+                    <Input
+                      type="number"
+                      placeholder={t('search.yearPlaceholder')}
+                      value={filters.year}
+                      onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value, decade: '', page: 1 }))}
+                      min="1900"
+                      max="2030"
+                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
+                    />
+                  ) : (
+                    <Select
+                      value={filters.decade || 'all'}
+                      onValueChange={(v) => setFilters((f) => ({ ...f, decade: v === 'all' ? '' : v, year: '', page: 1 }))}
+                    >
+                      <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white">
+                        <SelectValue placeholder={t('search.selectDecade')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('search.allDecades')}</SelectItem>
+                        {DECADES.map((d) => (
+                          <SelectItem key={d} value={d}>{d}s</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                {/* RF02 — Filtro por ator/atriz */}
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                    <User className="w-3 h-3" /> {t('search.actor')}
+                  </label>
                   <Input
-                    type="number"
-                    placeholder={t('search.yearPlaceholder')}
-                    value={filters.year}
-                    onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value, page: 1 }))}
-                    min="1900"
-                    max="2030"
+                    type="text"
+                    placeholder={t('search.actorPlaceholder')}
+                    value={castInput}
+                    onChange={(e) => handleCastChange(e.target.value)}
+                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                {/* RF14 — Filtro por diretor */}
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                    <Clapperboard className="w-3 h-3" /> {t('search.director')}
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder={t('search.directorPlaceholder')}
+                    value={directorInput}
+                    onChange={(e) => handleDirectorChange(e.target.value)}
                     className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
 
                 {/* RF08 — Ordenação */}
                 <div className="space-y-2">
-                  <label className="text-sm text-gray-600 dark:text-gray-400">Ordenar por</label>
+                  <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.sortBy')}</label>
                   <Select
                     value={filters.sort}
                     onValueChange={(v) => setFilters((f) => ({ ...f, sort: v, page: 1 }))}
@@ -355,10 +460,10 @@ useEffect(() => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="popularity.desc">Mais populares</SelectItem>
-                      <SelectItem value="vote_average.desc">Melhor avaliados</SelectItem>
-                      <SelectItem value="release_date.desc">Mais recentes</SelectItem>
-                      <SelectItem value="release_date.asc">Mais antigos</SelectItem>
+                      <SelectItem value="popularity.desc">{t('search.sortPopular')}</SelectItem>
+                      <SelectItem value="vote_average.desc">{t('search.sortRated')}</SelectItem>
+                      <SelectItem value="release_date.desc">{t('search.sortNewest')}</SelectItem>
+                      <SelectItem value="release_date.asc">{t('search.sortOldest')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -376,7 +481,7 @@ useEffect(() => {
                     value={[filters.rating]}
                     onValueChange={([v]) => setFilters((f) => ({ ...f, rating: v, page: 1 }))}
                     max={10}
-                    step={0.1}
+                    step={0.5}
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-gray-500">
@@ -472,10 +577,10 @@ useEffect(() => {
                       className="gap-2 border-gray-300 dark:border-gray-700"
                     >
                       <ChevronLeft className="w-4 h-4" />
-                      Anterior
+                      {t('search.previous')}
                     </Button>
                     <span className="text-gray-600 dark:text-gray-400 text-sm">
-                      Página {filters.page} de {totalPages}
+                      {filters.page} / {totalPages}
                     </span>
                     <Button
                       onClick={() => handlePageChange(filters.page + 1)}
@@ -483,7 +588,7 @@ useEffect(() => {
                       variant="outline"
                       className="gap-2 border-gray-300 dark:border-gray-700"
                     >
-                      Próximo
+                      {t('search.next')}
                       <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
