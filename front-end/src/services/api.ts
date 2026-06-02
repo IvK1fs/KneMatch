@@ -108,7 +108,10 @@ export interface DiscoverParams {
   sort?: string;
   page?: number;
   year?: string;
+  yearTo?: string;
   rating?: number;
+  cast?: string;
+  director?: string;
 }
 
 export async function discoverTitles(params: DiscoverParams): Promise<{ results: Title[]; total_pages: number }> {
@@ -118,8 +121,11 @@ export async function discoverTitles(params: DiscoverParams): Promise<{ results:
   if (params.genre) p.append("genre", params.genre);
   if (params.sort) p.append("sort_by", params.sort);
   if (params.year) p.append("year", params.year);
+  if (params.yearTo) p.append("year_to", params.yearTo);
   if (params.rating && params.rating > 0) p.append("vote_average.gte", String(params.rating));
   if (params.page) p.append("page", String(params.page));
+  if (params.cast) p.append("with_cast", params.cast);
+  if (params.director) p.append("with_crew", params.director);
   return fetchAPI(`/api/discover?${p.toString()}`);
 }
 
