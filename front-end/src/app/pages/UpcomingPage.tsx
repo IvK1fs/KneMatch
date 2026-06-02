@@ -1,24 +1,18 @@
-// src/app/pages/UpcomingPage.tsx  –  CineMatch  |  Sprint 1  |  RF27
-//
-// Página de Próximos Lançamentos.
-// Conectada a getUpcoming() de src/services/api.ts — sem dados hardcoded.
+import { useState, useEffect } from 'react';
+import { Calendar, Film, TrendingUp, Clock } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
+import { getUpcoming, type Title } from '../../services/api';
 
-import { useState, useEffect } from "react";
-import { getUpcoming, type Title } from "../../services/api";
-
-const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w300";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w300';
+const PLACEHOLDER = 'https://placehold.co/300x450/1a1a2e/ffffff?text=Sem+imagem';
 
 function formatarData(iso: string): string {
-  const date = new Date(iso + "T00:00:00");
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit", month: "long", year: "numeric",
-  });
+  const date = new Date(iso + 'T00:00:00');
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 function diasAte(iso: string): number {
-  const lancamento = new Date(iso + "T00:00:00");
+  const lancamento = new Date(iso + 'T00:00:00');
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   return Math.ceil((lancamento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
@@ -26,174 +20,158 @@ function diasAte(iso: string): number {
 
 function BadgeContagem({ releaseDate }: { releaseDate: string }) {
   const dias = diasAte(releaseDate);
-  if (dias < 0)   return <span style={badgeStyle("#BDD7EE", "#1F4E79")}>Lançado</span>;
-  if (dias === 0) return <span style={badgeStyle("#4472C4", "#fff")}>Hoje!</span>;
-  return <span style={badgeStyle("#EBF3FB", "#4472C4")}>em {dias} dia{dias !== 1 ? "s" : ""}</span>;
+  if (dias < 0)   return <Badge variant="outline" className="bg-gray-200 dark:bg-white/10 border-gray-400 dark:border-white/20 text-gray-700 dark:text-white">Lançado</Badge>;
+  if (dias === 0) return <Badge variant="outline" className="bg-yellow-500/20 border-yellow-500 text-yellow-600 dark:text-yellow-400">Hoje!</Badge>;
+  return <Badge variant="outline" className="bg-blue-500/20 border-blue-500 text-blue-600 dark:text-blue-400">em {dias} dia{dias !== 1 ? 's' : ''}</Badge>;
 }
 
-function badgeStyle(bg: string, color: string): React.CSSProperties {
-  return {
-    background: bg, color, borderRadius: 20,
-    padding: "3px 12px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
-  };
-}
-
-function Spinner() {
+function Skeleton() {
   return (
-    <div style={{ display: "flex", justifyContent: "center", padding: "48px 0" }}>
-      <div style={{
-        width: 40, height: 40,
-        border: "3px solid #BDD7EE",
-        borderTopColor: "#4472C4",
-        borderRadius: "50%",
-        animation: "spin 0.8s linear infinite",
-      }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div className="flex gap-4 bg-white dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-300 dark:border-white/10 h-36 animate-pulse">
+      <div className="w-24 bg-gray-200 dark:bg-gray-800" />
+      <div className="flex-1 py-6 pr-6 space-y-3">
+        <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/3" />
+      </div>
     </div>
   );
 }
 
-// ─── Card ─────────────────────────────────────────────────────────────────────
-
 function UpcomingCard({ item }: { item: Title }) {
-  const title       = item.title ?? item.name ?? "Sem título";
-  const releaseDate = item.release_date ?? item.first_air_date ?? "";
-  const poster      = item.poster_path
-    ? `${TMDB_IMAGE_BASE}${item.poster_path}`
-    : `https://placehold.co/90x135/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
+  const title       = item.title ?? item.name ?? 'Sem título';
+  const releaseDate = item.release_date ?? item.first_air_date ?? '';
+  const image       = item.poster_path ? `${TMDB_IMAGE_BASE}${item.poster_path}` : PLACEHOLDER;
+
+  //Navega para a página de detalhes ao clicar no card
+  function handleClick() {
+    const type = item.media_type ?? (item.first_air_date ? 'tv' : 'movie');
+    window.location.href = `/details/${item.id}?type=${type}`;
+  }
 
   return (
-    <div style={{
-      display: "flex", gap: 16,
-      background: "#fff", borderRadius: 10,
-      boxShadow: "0 2px 8px rgba(68,114,196,0.10)",
-      padding: 16, alignItems: "flex-start",
-    }}>
+    <div
+      onClick={handleClick}
+      className="flex gap-4 bg-white dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-300 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/30 transition-all cursor-pointer group"
+    >
       <img
-        src={poster}
+        src={image}
         alt={title}
-        style={{ width: 90, height: 135, objectFit: "cover", borderRadius: 6, flexShrink: 0 }}
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).src =
-            `https://placehold.co/90x135/BDD7EE/1F4E79?text=${encodeURIComponent(title)}`;
-        }}
+        className="w-24 object-cover flex-shrink-0"
+        onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
       />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: "#1F4E79" }}>{title}</h3>
+      <div className="flex-1 py-4 pr-4 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <h3 className="text-gray-900 dark:text-white font-bold text-base group-hover:text-yellow-500 transition-colors truncate">
+            {title}
+          </h3>
           {releaseDate && <BadgeContagem releaseDate={releaseDate} />}
         </div>
         {releaseDate && (
-          <p style={{ margin: "0 0 8px", fontSize: 12, color: "#888" }}>
-            🗓️ {formatarData(releaseDate)}
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-2 flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            {formatarData(releaseDate)}
           </p>
         )}
-        <p style={{ margin: 0, fontSize: 13, color: "#888" }}>
-          ★ {item.vote_average.toFixed(1)}
+        <p className="text-yellow-500 text-sm font-semibold">
+          ★ {item.vote_average?.toFixed(1) ?? '—'}
         </p>
       </div>
     </div>
   );
 }
 
-// ─── Página principal ─────────────────────────────────────────────────────────
-
 export default function UpcomingPage() {
   const [filmes,  setFilmes]  = useState<Title[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro,    setErro]    = useState(false);
-  const [ordenar, setOrdenar] = useState<"data" | "titulo">("data");
+  const [ordenar, setOrdenar] = useState<'data' | 'titulo'>('data');
 
   useEffect(() => {
-    async function carregar() {
-      setLoading(true);
-      setErro(false);
-      try {
-        const data = await getUpcoming();
-        setFilmes(data.results);
-      } catch (err) {
-        console.error("[UpcomingPage] getUpcoming falhou:", err);
-        setErro(true);
-      } finally {
-        setLoading(false);
-      }
-    }
-    carregar();
+    setLoading(true);
+    setErro(false);
+    getUpcoming()
+      .then(data => setFilmes(data.results))
+      .catch(() => setErro(true))
+      .finally(() => setLoading(false));
   }, []);
 
   const ordenados = [...filmes].sort((a, b) => {
-    if (ordenar === "titulo") {
-      const ta = a.title ?? a.name ?? "";
-      const tb = b.title ?? b.name ?? "";
-      return ta.localeCompare(tb);
+    if (ordenar === 'titulo') {
+      return (a.title ?? a.name ?? '').localeCompare(b.title ?? b.name ?? '');
     }
-
-    // Ordenação por data: futuros primeiro (crescente), já lançados depois
-    const da = a.release_date ?? a.first_air_date ?? "";
-    const db = b.release_date ?? b.first_air_date ?? "";
+    const da = a.release_date ?? a.first_air_date ?? '';
+    const db = b.release_date ?? b.first_air_date ?? '';
     const hoje = new Date().toISOString().slice(0, 10);
-
     const aFuturo = da >= hoje;
     const bFuturo = db >= hoje;
-
-    // Ambos futuros: mais próximo primeiro
-    if (aFuturo && bFuturo) return da.localeCompare(db);
-    // Ambos lançados: mais recente primeiro
+    if (aFuturo && bFuturo)   return da.localeCompare(db);
     if (!aFuturo && !bFuturo) return db.localeCompare(da);
-    // Futuro sempre vem antes do lançado
     return aFuturo ? -1 : 1;
   });
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F0F4FA", fontFamily: "Segoe UI, sans-serif" }}>
-
-      <main style={{ maxWidth: 860, margin: "0 auto", padding: "24px 16px" }}>
-
-        <div style={{ marginBottom: 24 }}>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#1F4E79" }}>
-            🗓️ Lançamentos Futuros
-          </h2>
-          <p style={{ margin: "4px 0 0", fontSize: 14, color: "#666" }}>
-            Filmes confirmados para os próximos meses
+    <div className="pt-[73px] min-h-screen bg-white dark:bg-black">
+      <section className="relative py-16 bg-gradient-to-b from-blue-100 dark:from-blue-900/10 via-white dark:via-black to-white dark:to-black">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="bg-blue-500 text-white p-3 rounded-lg">
+              <Clock className="w-8 h-8" />
+            </div>
+            <div>
+              <h1 className="text-5xl md:text-6xl text-gray-900 dark:text-white mb-4">Upcoming</h1>
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="bg-blue-500/20 border-blue-500 text-blue-600 dark:text-blue-400">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  Próximos Lançamentos
+                </Badge>
+                <Badge variant="outline" className="bg-gray-200 dark:bg-white/10 border-gray-400 dark:border-white/20 text-gray-900 dark:text-white">
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  Atualizado diariamente
+                </Badge>
+              </div>
+            </div>
+          </div>
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl">
+            Filmes confirmados para os próximos meses, com datas de lançamento e avaliações preliminares.
           </p>
         </div>
+      </section>
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 20, alignItems: "center" }}>
-          <span style={{ fontSize: 13, color: "#666" }}>Ordenar por:</span>
-          {(["data", "titulo"] as const).map((op) => (
+      <section className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Film className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <span className="text-gray-600 dark:text-gray-400 text-sm">Ordenar por:</span>
+          {(['data', 'titulo'] as const).map(op => (
             <button
               key={op}
               onClick={() => setOrdenar(op)}
-              style={{
-                padding: "6px 16px", borderRadius: 6, cursor: "pointer",
-                border: "2px solid #4472C4", fontSize: 12, fontWeight: 700,
-                background: ordenar === op ? "#4472C4" : "transparent",
-                color:      ordenar === op ? "#fff" : "#4472C4",
-              }}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
+                ordenar === op
+                  ? 'bg-blue-500 border-blue-500 text-white'
+                  : 'bg-transparent border-gray-400 dark:border-white/20 text-gray-700 dark:text-gray-300 hover:border-blue-400'
+              }`}
             >
-              {op === "data" ? "Data" : "Título"}
+              {op === 'data' ? 'Data' : 'Título'}
             </button>
           ))}
         </div>
 
-        {loading && <Spinner />}
+        {loading && (
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} />)}
+          </div>
+        )}
 
         {erro && (
-          <div style={{
-            background: "#FFF3CD", border: "1px solid #FFCA2C",
-            borderRadius: 8, padding: "12px 16px",
-            display: "flex", alignItems: "center", gap: 12,
-          }}>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-400 rounded-lg p-4 flex items-center gap-3">
             <span>⚠️</span>
-            <span style={{ flex: 1, fontSize: 14, color: "#664D03" }}>
+            <span className="flex-1 text-sm text-yellow-800 dark:text-yellow-300">
               Não foi possível carregar os lançamentos.
             </span>
             <button
               onClick={() => window.location.reload()}
-              style={{
-                background: "#4472C4", color: "#fff", border: "none",
-                borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: 13,
-              }}
+              className="bg-blue-500 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-blue-600 transition-colors"
             >
               Tentar novamente
             </button>
@@ -201,16 +179,16 @@ export default function UpcomingPage() {
         )}
 
         {!loading && !erro && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {ordenados.map((m) => <UpcomingCard key={m.id} item={m} />)}
+          <div className="flex flex-col gap-4">
+            {ordenados.map(m => <UpcomingCard key={m.id} item={m} />)}
             {ordenados.length === 0 && (
-              <p style={{ textAlign: "center", color: "#888", paddingTop: 32 }}>
+              <p className="text-center text-gray-500 dark:text-gray-400 pt-8">
                 Nenhum lançamento encontrado.
               </p>
             )}
           </div>
         )}
-      </main>
+      </section>
     </div>
   );
 }
