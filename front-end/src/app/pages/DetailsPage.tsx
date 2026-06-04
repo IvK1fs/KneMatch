@@ -7,14 +7,17 @@ import {
   getVideos,
   getProviders,
   getSimilar,
+  getAlternativeTitles,
   type TitleDetails,
   type MediaType,
   type CastMember,
   type Video,
   type Provider,
   type Title,
+  type AlternativeTitle,
 } from "../../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import { Breadcrumb } from "../components/Breadcrumb";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w185";
 const TMDB_LOGO_BASE = "https://image.tmdb.org/t/p/w92";
@@ -75,7 +78,6 @@ function ShareButtons({ title }: { title: string }) {
         <Share2 className="w-4 h-4" />
         {copied ? "Link copiado!" : "Compartilhar"}
       </button>
-      
       <a
         href={whatsappUrl}
         target="_blank"
@@ -85,7 +87,6 @@ function ShareButtons({ title }: { title: string }) {
         <MessageCircle className="w-4 h-4" />
         WhatsApp
       </a>
-      
       <a
         href={twitterUrl}
         target="_blank"
@@ -111,6 +112,7 @@ export default function DetailsPage() {
   const [trailer, setTrailer] = useState<Video | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [similar, setSimilar] = useState<Title[]>([]);
+  const [altTitles, setAltTitles] = useState<AlternativeTitle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favLoading, setFavLoading] = useState(false);
@@ -128,14 +130,16 @@ export default function DetailsPage() {
       getVideos(id, type),
       getProviders(id, type),
       getSimilar(id, type),
+      getAlternativeTitles(id, type).catch(() => ({ titles: [], results: [] })),
     ])
-      .then(([detailsData, castData, videosData, providersData, similarData]) => {
+      .then(([detailsData, castData, videosData, providersData, similarData, altTitlesData]) => {
         setDetails(detailsData);
         setCast(castData.cast.slice(0, 5));
         const found = videosData.results.find((v) => v.type === "Trailer" && v.site === "YouTube");
         setTrailer(found ?? null);
         setProviders(providersData.results);
         setSimilar((similarData.results ?? []).slice(0, 6));
+        setAltTitles(altTitlesData.titles ?? altTitlesData.results ?? []);
       })
       .catch(() => setError("Não foi possível carregar os detalhes do título."))
       .finally(() => setLoading(false));
@@ -143,6 +147,15 @@ export default function DetailsPage() {
 
   const displayTitle = details?.title ?? details?.name ?? "Título";
   const year = (details?.release_date ?? details?.first_air_date ?? "").slice(0, 4);
+  const typeLabel = type === "movie" ? "Filmes" : "Séries";
+  const typeRoute = type === "movie" ? "/search?type=movie" : "/search?type=tv";
+
+  //RF33: segmentos do breadcrumb construídos dinamicamente
+  const breadcrumbSegments = [
+    { label: "Home", to: "/" },
+    { label: typeLabel, to: typeRoute },
+    { label: loading ? "Carregando..." : displayTitle },
+  ];
 
   const numericId = Number(id);
   const isFav = favorites.some(f => f.id === numericId);
@@ -191,6 +204,9 @@ export default function DetailsPage() {
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-950" />
+        <div className="absolute left-4 top-4">
+          <Breadcrumb segments={breadcrumbSegments} />
+        </div>
       </div>
 
       <div className="mx-auto max-w-5xl px-4 pb-16 -mt-20 relative z-10">
@@ -443,6 +459,31 @@ export default function DetailsPage() {
               })}
             </div>
           </Section>
+        )}
+
+        {/* # RF30: seção colapsável de títulos em outros idiomas */}
+        {!loading && altTitles.length > 0 && (
+          <section className="mt-10">
+            <details className="group">
+              <summary className="cursor-pointer list-none">
+                <div className="flex items-center justify-between rounded-xl bg-zinc-900 px-4 py-3 hover:bg-zinc-800 transition-colors">
+                  <h2 className="text-base font-semibold">
+                    Títulos em outros idiomas ({altTitles.length})
+                  </h2>
+                  <span className="text-zinc-400 text-sm transition-transform group-open:rotate-180">▾</span>
+                </div>
+              </summary>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                {altTitles.map((alt, i) => (
+                  <div key={i} className="rounded-lg bg-zinc-900 px-3 py-2">
+                    <p className="text-xs text-zinc-500 uppercase">{alt.iso_3166_1}</p>
+                    <p className="text-sm text-zinc-300 truncate">{alt.title}</p>
+                    {alt.type && <p className="text-xs text-zinc-600">{alt.type}</p>}
+                  </div>
+                ))}
+              </div>
+            </details>
+          </section>
         )}
 
         {error && (
