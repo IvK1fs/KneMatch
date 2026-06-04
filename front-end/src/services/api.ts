@@ -192,3 +192,25 @@ export async function getTopTen(type: MediaType | "" = "") {
 export async function getSimilar(id: string | number, type: MediaType = "movie") {
   return fetchAPI<{ results: Title[] }>(`/api/details/${id}/similar?type=${type}`);
 }
+export interface AlternativeTitle {
+  iso_3166_1: string;
+  title: string;
+  type: string;
+}
+
+export async function getAlternativeTitles(id: string | number, type: MediaType = "movie") {
+  return fetchAPI<{ titles?: AlternativeTitle[]; results?: AlternativeTitle[] }>(
+    `/api/details/${id}/alternative-titles?type=${type}`
+  );
+}
+
+export async function searchTitles(
+  query: string,
+  type: MediaType | "" = "",
+  withCrew?: string
+) {
+  const params = new URLSearchParams({ q: query });
+  if (type) params.append("type", type);
+  if (withCrew) params.append("with_crew", withCrew);
+  return fetchAPI<{ results: Title[] }>(`/api/search?${params.toString()}`);
+}
