@@ -31,6 +31,7 @@ interface FilterState {
   cast: string;
   director: string;
   decade: string;
+  showrunner: string;
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -44,6 +45,7 @@ const DEFAULT_FILTERS: FilterState = {
   cast: '',
   director: '',
   decade: '',
+  showrunner: '',
 };
 
 const DECADES = ['1950', '1960', '1970', '1980', '1990', '2000', '2010', '2020'];
@@ -53,21 +55,22 @@ export function SearchPage() {
 
   const [searchParams] = useSearchParams();
 
-useEffect(() => {
-  const type = searchParams.get('type');
-  //Aplica filtro de tipo vindo da URL ao montar a página
-  if (type === 'movie' || type === 'tv') {
-    setFilters(prev => ({ ...prev, type }));
-  }
-}, []);
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type === 'movie' || type === 'tv') {
+      setFilters(prev => ({ ...prev, type }));
+    }
+  }, []);
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [yearMode, setYearMode] = useState<'year' | 'decade'>('year');
   const [inputValue, setInputValue] = useState('');
   const [castInput, setCastInput] = useState('');
   const [directorInput, setDirectorInput] = useState('');
+  const [showrunnerInput, setShowrunnerInput] = useState('');
   const castDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directorDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showrunnerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFilters, setShowFilters] = useState(true);
 
   const [results, setResults] = useState<Title[]>([]);
@@ -102,59 +105,60 @@ useEffect(() => {
     executeSearch(filters);
   }, [filters]);
 
- async function executeSearch(f: FilterState) {
-  setIsLoading(true);
-  setApiError(false);
-  try {
-    let items: Title[] = [];
-    let pages = 1;
+  async function executeSearch(f: FilterState) {
+    setIsLoading(true);
+    setApiError(false);
+    try {
+      let items: Title[] = [];
+      let pages = 1;
 
-    const yearFrom = f.decade ? f.decade : f.year;
-    const yearTo   = f.decade ? String(parseInt(f.decade) + 9) : undefined;
-    const usesAdvancedFilters = !!(f.cast || f.director || f.decade);
+      const yearFrom = f.decade ? f.decade : f.year;
+      const yearTo   = f.decade ? String(parseInt(f.decade) + 9) : undefined;
+      const usesAdvancedFilters = !!(f.cast || f.director || f.decade || f.showrunner);
 
-    if (f.q.trim() && !usesAdvancedFilters) {
-      const data = await searchTitles(f.q, f.type);
-      items = data.results ?? [];
-      pages = (data as any).total_pages ?? 1;
-    } else {
-      try {
-        const data = await discoverTitles({
-          q: f.q || undefined,
-          type: f.type,
-          genre: f.genre,
-          sort: f.sort,
-          page: f.page,
-          year: yearFrom,
-          yearTo,
-          rating: f.rating,
-          cast: f.cast || undefined,
-          director: f.director || undefined,
-        });
+      if (f.q.trim() && !usesAdvancedFilters) {
+        const data = await searchTitles(f.q, f.type);
         items = data.results ?? [];
-        pages = data.total_pages ?? 1;
-      } catch {
-        const trendingType = f.type || undefined;
-        const [trendingData, upcomingData] = await Promise.all([
-          getTrending(trendingType),
-          f.type !== 'tv' ? getUpcoming() : Promise.resolve({ results: [] }),
-        ]);
-        const seen = new Set<number>();
-        for (const item of [...(trendingData.results ?? []), ...(upcomingData.results ?? [])]) {
-          if (!seen.has(item.id)) { seen.add(item.id); items.push(item); }
+        pages = (data as any).total_pages ?? 1;
+      } else {
+        try {
+          const data = await discoverTitles({
+            q: f.q || undefined,
+            type: f.type,
+            genre: f.genre,
+            sort: f.sort,
+            page: f.page,
+            year: yearFrom,
+            yearTo,
+            rating: f.rating,
+            cast: f.cast || undefined,
+            director: f.director || undefined,
+            showrunner: f.showrunner || undefined,
+          });
+          items = data.results ?? [];
+          pages = data.total_pages ?? 1;
+        } catch {
+          const trendingType = f.type || undefined;
+          const [trendingData, upcomingData] = await Promise.all([
+            getTrending(trendingType),
+            f.type !== 'tv' ? getUpcoming() : Promise.resolve({ results: [] }),
+          ]);
+          const seen = new Set<number>();
+          for (const item of [...(trendingData.results ?? []), ...(upcomingData.results ?? [])]) {
+            if (!seen.has(item.id)) { seen.add(item.id); items.push(item); }
+          }
         }
       }
-    }
 
-    setResults(items);
-    setTotalPages(pages);
-  } catch {
-    setApiError(true);
-    setResults([]);
-  } finally {
-    setIsLoading(false);
+      setResults(items);
+      setTotalPages(pages);
+    } catch {
+      setApiError(true);
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
   }
-}
 
   function getGenreName(genreIds: number[]): string {
     if (!genreIds || genreIds.length === 0) return '';
@@ -217,6 +221,7 @@ useEffect(() => {
     setInputValue('');
     setCastInput('');
     setDirectorInput('');
+    setShowrunnerInput('');
     setFilters(DEFAULT_FILTERS);
     setYearMode('year');
   }
@@ -237,6 +242,14 @@ useEffect(() => {
     }, 600);
   }
 
+  function handleShowrunnerChange(value: string) {
+    setShowrunnerInput(value);
+    if (showrunnerDebounceRef.current) clearTimeout(showrunnerDebounceRef.current);
+    showrunnerDebounceRef.current = setTimeout(() => {
+      setFilters((f) => ({ ...f, showrunner: value, page: 1 }));
+    }, 600);
+  }
+
   const activeFiltersCount = [
     filters.type !== '',
     filters.genre !== '',
@@ -245,6 +258,7 @@ useEffect(() => {
     filters.rating > 0,
     filters.cast !== '',
     filters.director !== '',
+    filters.showrunner !== '',
   ].filter(Boolean).length;
 
   const pageTitle = filters.q
@@ -448,6 +462,27 @@ useEffect(() => {
                     className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
+
+                {/* RF15 — Filtro por Showrunner (séries) */}
+                {(filters.type === 'tv' || filters.type === '') && (
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                      <Clapperboard className="w-3 h-3" /> Showrunner / Criador
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Ex: Vince Gilligan"
+                      value={showrunnerInput}
+                      onChange={(e) => handleShowrunnerChange(e.target.value)}
+                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
+                    />
+                    {filters.type === '' && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        Aplica somente a séries
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* RF08 — Ordenação */}
                 <div className="space-y-2">

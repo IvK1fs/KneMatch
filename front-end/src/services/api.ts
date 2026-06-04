@@ -56,6 +56,12 @@ export interface Genre {
   name: string;
 }
 
+export interface AlternativeTitle {
+  iso_3166_1: string;
+  title: string;
+  type: string;
+}
+
 async function fetchAPI<T>(path: string): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`);
   if (!response.ok) {
@@ -112,6 +118,7 @@ export interface DiscoverParams {
   rating?: number;
   cast?: string;
   director?: string;
+  showrunner?: string;
 }
 
 export async function discoverTitles(params: DiscoverParams): Promise<{ results: Title[]; total_pages: number }> {
@@ -139,17 +146,21 @@ export async function getSimilar(id: string | number, type: MediaType = "movie")
   return fetchAPI<{ results: Title[] }>(`/api/details/${id}/similar?type=${type}`);
 }
 
-export async function getPersonalRecommendations(): Promise<{ results: any[]; media_type: string }> {
-  const token = localStorage.getItem('token');
-  //Sem token não tenta requisição — retorna vazio silenciosamente
-  if (!token) return { results: [], media_type: 'movie' };
+//RF30: títulos do filme/série em outros idiomas
+export async function getAlternativeTitles(id: string | number, type: MediaType = "movie") {
+  return fetchAPI<{ titles?: AlternativeTitle[]; results?: AlternativeTitle[] }>(
+    `/api/details/${id}/alternative-titles?type=${type}`
+  );
+}
 
-  const BASE_URL = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:3001';
+export async function getPersonalRecommendations(): Promise<{ results: any[]; media_type: string }> {
+  const token = localStorage.getItem("token");
+  if (!token) return { results: [], media_type: "movie" };
 
   const response = await fetch(`${BASE_URL}/api/users/recommendations`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  if (!response.ok) return { results: [], media_type: 'movie' };
+  if (!response.ok) return { results: [], media_type: "movie" };
   return response.json();
 }
