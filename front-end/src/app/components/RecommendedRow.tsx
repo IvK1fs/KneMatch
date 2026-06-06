@@ -10,6 +10,7 @@ type CardItem = {
   rating: number;
   year: string;
   genre: string;
+  type: 'movie' | 'tv';
 };
 
 export function RecommendedRow() {
@@ -22,7 +23,6 @@ export function RecommendedRow() {
     getPersonalRecommendations().then(data => {
       if (!data.results.length) return;
 
-      //poster_path null recebe string vazia — ContentRow já trata placeholder
       const mapped: CardItem[] = data.results.map((item: any) => ({
         id: item.id,
         title: item.title ?? item.name ?? 'Sem título',
@@ -32,6 +32,7 @@ export function RecommendedRow() {
         rating: Math.round(item.vote_average * 10) / 10,
         year: (item.release_date ?? item.first_air_date ?? '').slice(0, 4),
         genre: '',
+        type: item.media_type === 'tv' ? 'tv' : 'movie',
       }));
 
       setItems(mapped);
