@@ -9,6 +9,7 @@ interface Content {
   rating: number;
   year: string;
   genre: string;
+  type?: 'movie' | 'tv';
 }
 
 interface ContentRowProps {
@@ -36,11 +37,13 @@ export function ContentRow({ title, items }: ContentRowProps) {
           {items.map((item) => (
             <MovieCard
               key={item.id}
+              id={item.id}
               title={item.title}
               image={item.image}
               rating={item.rating}
               year={item.year}
               genre={item.genre}
+              type={item.type}
             />
           ))}
         </div>
