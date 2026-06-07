@@ -130,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nome: name, email, senha: password }),
     });
+    if (res.status === 409) throw new Error('E-mail já cadastrado');
     if (!res.ok) throw new Error('Erro ao criar conta');
     const data = await res.json();
     localStorage.setItem('token', data.token);

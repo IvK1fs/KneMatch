@@ -13,12 +13,10 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { login, signup } = useAuth();
 
-  // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
-  // Signup form state
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -33,12 +31,11 @@ export function LoginPage() {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-
     try {
       await login(loginEmail, loginPassword);
       navigate('/profile');
     } catch (err) {
-      setError(t('auth.loginError'));
+      setError(err instanceof Error ? err.message : t('auth.loginError'));
     } finally {
       setIsLoading(false);
     }
@@ -59,19 +56,17 @@ export function LoginPage() {
     }
 
     setIsLoading(true);
-
     try {
       await signup(signupName, signupEmail, signupPassword);
       navigate('/profile');
     } catch (err) {
-      setError(t('auth.signupError'));
+      setError(err instanceof Error ? err.message : t('auth.signupError'));
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleAuth = () => {
-    // Simulação de autenticação com Google
     alert(t('auth.googleComingSoon'));
   };
 
@@ -86,20 +81,14 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center px-4 py-12 overflow-hidden">
-      {/* Background with movie posters grid */}
       <div className="absolute inset-0">
         <div className="grid grid-cols-3 gap-4 w-full h-full opacity-20 dark:opacity-10">
           {backgroundImages.map((image, index) => (
             <div key={index} className="relative overflow-hidden">
-              <img
-                src={image}
-                alt=""
-                className="w-full h-full object-cover scale-110 blur-sm"
-              />
+              <img src={image} alt="" className="w-full h-full object-cover scale-110 blur-sm" />
             </div>
           ))}
         </div>
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900/95 via-gray-900/90 to-black/95 dark:from-[#0f0f1a]/98 dark:via-[#0f0f1a]/95 dark:to-[#1a1a2e]/98" />
       </div>
 
@@ -163,11 +152,7 @@ export function LoginPage() {
                   </div>
                 )}
 
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full bg-[#e50914] hover:bg-[#c40812] text-white"
-                >
+                <Button type="submit" disabled={isLoading} className="w-full bg-[#e50914] hover:bg-[#c40812] text-white">
                   {isLoading ? t('auth.loading') : t('auth.signInButton')}
                 </Button>
 
@@ -188,12 +173,7 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGoogleAuth}
-                  className="w-full border-gray-300 dark:border-gray-700"
-                >
+                <Button type="button" variant="outline" onClick={handleGoogleAuth} className="w-full border-gray-300 dark:border-gray-700">
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -293,11 +273,7 @@ export function LoginPage() {
                   </div>
                 )}
 
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full bg-[#e50914] hover:bg-[#c40812] text-white"
-                >
+                <Button type="submit" disabled={isLoading} className="w-full bg-[#e50914] hover:bg-[#c40812] text-white">
                   {isLoading ? t('auth.loading') : t('auth.signUpButton')}
                 </Button>
 
@@ -312,12 +288,7 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGoogleAuth}
-                  className="w-full border-gray-300 dark:border-gray-700"
-                >
+                <Button type="button" variant="outline" onClick={handleGoogleAuth} className="w-full border-gray-300 dark:border-gray-700">
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
