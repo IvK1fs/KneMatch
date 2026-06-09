@@ -52,17 +52,15 @@ const DECADES = ['1950', '1960', '1970', '1980', '1990', '2000', '2010', '2020']
 
 export function SearchPage() {
   const { t } = useTranslation();
-
   const [searchParams] = useSearchParams();
 
-  useEffect(() => {
-    const type = searchParams.get('type');
-    if (type === 'movie' || type === 'tv') {
-      setFilters(prev => ({ ...prev, type }));
-    }
-  }, []);
+  // Inicializa o tipo diretamente da URL, sem useEffect
+  const initialType = (() => {
+    const t = searchParams.get('type');
+    return t === 'movie' || t === 'tv' ? t : '';
+  })();
 
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS, type: initialType });
   const [yearMode, setYearMode] = useState<'year' | 'decade'>('year');
   const [inputValue, setInputValue] = useState('');
   const [castInput, setCastInput] = useState('');
@@ -83,6 +81,13 @@ export function SearchPage() {
   const [suggestions, setSuggestions] = useState<Title[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reage a mudanças na URL (ex: clicar em "Séries" na navbar enquanto já está na SearchPage)
+  useEffect(() => {
+    const type = searchParams.get('type');
+    const newType = type === 'movie' || type === 'tv' ? type : '';
+    setFilters(prev => ({ ...prev, type: newType, genre: '', page: 1 }));
+  }, [searchParams]);
 
   useEffect(() => {
     const type = (filters.type || 'movie') as 'movie' | 'tv';
@@ -318,7 +323,6 @@ export function SearchPage() {
             </Button>
           </div>
 
-          {/* RF06 — Tipo */}
           <div className="flex items-center gap-2 mt-4">
             {(['', 'movie', 'tv'] as const).map((type) => (
               <button
@@ -367,7 +371,6 @@ export function SearchPage() {
                   )}
                 </div>
 
-                {/* RF03 — Gênero */}
                 <div className="space-y-2">
                   <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.genre')}</label>
                   <Select
@@ -386,7 +389,6 @@ export function SearchPage() {
                   </Select>
                 </div>
 
-                {/* RF04/RF16/RF17 — Ano / Década */}
                 <div className="space-y-2">
                   <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.yearDecade')}</label>
                   <div className="flex rounded-md overflow-hidden border border-gray-300 dark:border-gray-600 text-xs w-full">
@@ -435,7 +437,6 @@ export function SearchPage() {
                   )}
                 </div>
 
-                {/* RF02 — Filtro por ator/atriz */}
                 <div className="space-y-2">
                   <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
                     <User className="w-3 h-3" /> {t('search.actor')}
@@ -449,7 +450,6 @@ export function SearchPage() {
                   />
                 </div>
 
-                {/* RF14 — Filtro por diretor */}
                 <div className="space-y-2">
                   <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
                     <Clapperboard className="w-3 h-3" /> {t('search.director')}
@@ -463,7 +463,6 @@ export function SearchPage() {
                   />
                 </div>
 
-                {/* RF15 — Filtro por Showrunner (séries) */}
                 {(filters.type === 'tv' || filters.type === '') && (
                   <div className="space-y-2">
                     <label className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
@@ -477,14 +476,11 @@ export function SearchPage() {
                       className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
                     />
                     {filters.type === '' && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500">
-                        Aplica somente a séries
-                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Aplica somente a séries</p>
                     )}
                   </div>
                 )}
 
-                {/* RF08 — Ordenação */}
                 <div className="space-y-2">
                   <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.sortBy')}</label>
                   <Select
@@ -503,7 +499,6 @@ export function SearchPage() {
                   </Select>
                 </div>
 
-                {/* Avaliação mínima */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-sm text-gray-600 dark:text-gray-400">{t('search.minRating')}</label>
@@ -602,7 +597,6 @@ export function SearchPage() {
                   })}
                 </div>
 
-                {/* RF10 — Paginação */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-4 mt-8">
                     <Button
