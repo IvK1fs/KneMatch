@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import {
   LogOut, Moon, Sun, Star, List, Plus, X, Heart,
-  Film, Tv, Settings, ChevronRight, Trash2, Eye,
+  Film, Tv, Settings, ChevronRight, Trash2,
   ArrowLeft, GripVertical, FolderOpen, Sparkles
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -14,11 +14,17 @@ import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { Badge } from '../components/ui/badge';
 import { motion } from 'motion/react';
 
-
 type Tab = 'favorites' | 'lists' | 'settings';
+
+interface Favorite {
+  id: number;
+  title: string;
+  image: string;
+  rating: number;
+  type: 'movie' | 'series';
+}
 
 function PosterGrid({ images }: { images: string[] }) {
   const slots = [...images, ...Array(4).fill('')].slice(0, 4);
@@ -58,18 +64,54 @@ export function ProfilePage() {
   const [activeTab, setActiveTab] = useState<Tab>('favorites');
   const [profileParams] = useSearchParams();
 
-useEffect(() => {
-  const tab = profileParams.get('tab') as Tab | null;
-  //Abre a aba correta quando vier de um link externo
-  if (tab && ['favorites', 'lists', 'settings'].includes(tab)) {
-    setActiveTab(tab);
-  }
-}, []);
+  useEffect(() => {
+    const tab = profileParams.get('tab') as Tab | null;
+    if (tab && ['favorites', 'lists', 'settings'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, []);
+
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [newListName, setNewListName] = useState('');
   const [newListDesc, setNewListDesc] = useState('');
   const [openListId, setOpenListId] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'movie' | 'series'>('all');
+
+  // drag-and-drop state
+  const [listItems, setListItems] = useState<Record<string, Favorite[]>>({});
+  const dragIndex = useRef<number | null>(null);
+
+  // sincroniza listItems com o contexto quando a lista abre
+  useEffect(() => {
+    if (!openListId) return;
+    const found = lists.find(l => l.id === openListId);
+    if (found) setListItems(prev => ({ ...prev, [openListId]: [...found.items] }));
+  }, [openListId, lists]);
+
+  function handleDragStart(idx: number) {
+    dragIndex.current = idx;
+  }
+
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault();
+    if (dragIndex.current === null || dragIndex.current === idx || !openListId) return;
+    setListItems(prev => {
+      const items = [...(prev[openListId] ?? [])];
+      const [moved] = items.splice(dragIndex.current!, 1);
+      items.splice(idx, 0, moved);
+      dragIndex.current = idx;
+      return { ...prev, [openListId]: items };
+    });
+  }
+
+  function handleDragEnd() {
+    dragIndex.current = null;
+  }
+
+  function navigateToDetails(item: Favorite) {
+    const type = item.type === 'movie' ? 'movie' : 'tv';
+    window.location.href = `/details/${item.id}?type=${type}`;
+  }
 
   const demoUser = user ?? {
     id: 'demo',
@@ -97,6 +139,7 @@ useEffect(() => {
     : favorites.filter(f => f.type === filterType);
 
   const openList = lists.find(l => l.id === openListId);
+  const currentItems = openListId ? (listItems[openListId] ?? openList?.items ?? []) : [];
 
   const movieCount = favorites.filter(f => f.type === 'movie').length;
   const seriesCount = favorites.filter(f => f.type === 'series').length;
@@ -175,9 +218,7 @@ useEffect(() => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative ${
-                activeTab === tab.id
-                  ? 'text-white'
-                  : 'text-white/40 hover:text-white/70'
+                activeTab === tab.id ? 'text-white' : 'text-white/40 hover:text-white/70'
               }`}
             >
               {tab.icon}
@@ -196,20 +237,16 @@ useEffect(() => {
         {activeTab === 'favorites' && (
           <div className="pb-16">
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-white">
-                  {filteredFavorites.length} {filteredFavorites.length === 1 ? 'favorito' : 'favoritos'}
-                </h2>
-              </div>
+              <h2 className="text-lg font-semibold text-white">
+                {filteredFavorites.length} {filteredFavorites.length === 1 ? 'favorito' : 'favoritos'}
+              </h2>
               <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1">
                 {(['all', 'movie', 'series'] as const).map(f => (
                   <button
                     key={f}
                     onClick={() => setFilterType(f)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                      filterType === f
-                        ? 'bg-white/15 text-white'
-                        : 'text-white/40 hover:text-white/70'
+                      filterType === f ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white/70'
                     }`}
                   >
                     {f === 'all' ? 'Tudo' : f === 'movie' ? 'Filmes' : 'Séries'}
@@ -227,7 +264,10 @@ useEffect(() => {
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                 {filteredFavorites.map(item => (
                   <div key={item.id} className="group relative">
-                    <div className="relative rounded-xl overflow-hidden aspect-[2/3] bg-white/5">
+                    <div
+                      className="relative rounded-xl overflow-hidden aspect-[2/3] bg-white/5 cursor-pointer"
+                      onClick={() => navigateToDetails(item)}
+                    >
                       <img
                         src={item.image}
                         alt={item.title}
@@ -235,7 +275,7 @@ useEffect(() => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <button
-                          onClick={() => removeFavorite(item.id)}
+                          onClick={(e) => { e.stopPropagation(); removeFavorite(item.id); }}
                           className="absolute top-2 right-2 w-7 h-7 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center transition-colors"
                           title="Remover dos favoritos"
                         >
@@ -292,7 +332,7 @@ useEffect(() => {
                       {openList.description && (
                         <p className="text-white/40 text-sm mt-1">{openList.description}</p>
                       )}
-                      <p className="text-white/30 text-sm mt-2">{openList.items.length} itens</p>
+                      <p className="text-white/30 text-sm mt-2">{currentItems.length} itens</p>
                     </div>
                     <button
                       onClick={() => { deleteList(openList.id); setOpenListId(null); }}
@@ -303,7 +343,7 @@ useEffect(() => {
                     </button>
                   </div>
 
-                  {openList.items.length === 0 ? (
+                  {currentItems.length === 0 ? (
                     <div className="text-center py-20">
                       <FolderOpen className="w-16 h-16 text-white/10 mx-auto mb-4" />
                       <p className="text-white/30 text-sm">Lista vazia</p>
@@ -311,24 +351,39 @@ useEffect(() => {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {openList.items.map((item, idx) => (
+                      {currentItems.map((item, idx) => (
                         <motion.div
                           key={item.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.05 }}
+                          draggable
+                          onDragStart={() => handleDragStart(idx)}
+                          onDragOver={(e) => handleDragOver(e, idx)}
+                          onDragEnd={handleDragEnd}
                           className="group flex items-center gap-4 p-3 rounded-xl bg-white/3 hover:bg-white/6 border border-white/5 hover:border-white/10 transition-all"
                         >
                           <span className="text-white/20 text-sm font-mono w-5 text-center flex-shrink-0">{idx + 1}</span>
-                          <GripVertical className="w-4 h-4 text-white/20 flex-shrink-0 cursor-grab" />
-                          <div className="w-10 h-14 rounded-lg overflow-hidden flex-shrink-0">
-                            <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                          <GripVertical className="w-4 h-4 text-white/30 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                          {/* poster clicável */}
+                          <div
+                            className="w-10 h-14 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer"
+                            onClick={() => navigateToDetails(item)}
+                            title="Ver detalhes"
+                          >
+                            <img src={item.image} alt={item.title} className="w-full h-full object-cover hover:opacity-80 transition-opacity" />
                           </div>
-                          <div className="flex-1 min-w-0">
+                          {/* info clicável */}
+                          <div
+                            className="flex-1 min-w-0 cursor-pointer"
+                            onClick={() => navigateToDetails(item)}
+                          >
                             <div className="flex items-center gap-2 mb-1">
                               <TypeBadge type={item.type} />
                             </div>
-                            <h3 className="text-white font-medium text-sm line-clamp-1">{item.title}</h3>
+                            <h3 className="text-white font-medium text-sm line-clamp-1 group-hover:text-white/80 transition-colors">
+                              {item.title}
+                            </h3>
                             <div className="flex items-center gap-1 mt-0.5">
                               <Star className="w-3 h-3 text-yellow-400" fill="currentColor" />
                               <span className="text-yellow-400 text-xs">
@@ -358,10 +413,7 @@ useEffect(() => {
                     <h2 className="text-lg font-semibold text-white">{lists.length} {lists.length === 1 ? 'lista' : 'listas'}</h2>
                     <Dialog open={isCreateListOpen} onOpenChange={setIsCreateListOpen}>
                       <DialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          className="gap-2 bg-[#e50914] hover:bg-[#c40812] text-white border-0"
-                        >
+                        <Button size="sm" className="gap-2 bg-[#e50914] hover:bg-[#c40812] text-white border-0">
                           <Plus className="w-4 h-4" />
                           Nova Lista
                         </Button>
