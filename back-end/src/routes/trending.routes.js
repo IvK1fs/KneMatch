@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const trendingController = require('../controllers/trending.controller');
+const { getTrending } = require('../controllers/trending.controller');
 
-router.get('/', trendingController.getTrending);
+const { validateTrending } = require('../middleware/validate.middleware');
+const { filterParams, allowedParams } = require('../middleware/sanitize.middleware');
+
+router.get('/', filterParams(allowedParams.trending), validateTrending, getTrending);
 
 module.exports = router;

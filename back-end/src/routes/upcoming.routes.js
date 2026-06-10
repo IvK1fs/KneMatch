@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const upcomingController = require('../controllers/upcoming.controller');
+const { getUpcoming } = require('../controllers/upcoming.controller');
+const { validateUpcoming } = require('../middleware/validate.middleware');
+const { filterParams, allowedParams } = require('../middleware/sanitize.middleware');
 
-router.get('/', upcomingController.getUpcoming);
+router.get('/', filterParams(allowedParams.upcoming), validateUpcoming, getUpcoming);
 
 module.exports = router;
