@@ -2,12 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const searchController = require('../controllers/search.controller');
+const { validateSearch, validateSearchGenre } = require('../middleware/validate.middleware');
 
-// Verifica se o controller foi importado corretamente
-console.log('searchController:', Object.keys(searchController));
-
-// Rotas - versão SIMPLES sem middlewares extras
-router.get('/', searchController.search);
-router.get('/genre', searchController.searchByGenre);
+// Rotas com sanitização via middleware
+router.get('/', validateSearch, searchController.search);
+router.get('/genre', validateSearchGenre, searchController.searchByGenre);
 
 module.exports = router;
