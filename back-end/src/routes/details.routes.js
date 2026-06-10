@@ -9,5 +9,5 @@ router.get('/:id/cast', filterParams(allowedParams.details), validateMediaDetail
 router.get('/:id/videos', filterParams(allowedParams.details), validateMediaDetails, detailsController.getVideos);
 router.get('/:id/providers', filterParams(allowedParams.details), validateMediaDetails, detailsController.getProviders);
 router.get('/:id/similar', filterParams(allowedParams.details), validateMediaDetails, detailsController.getSimilar);
-
+router.get('/:id/alternative-titles',filterParams(allowedParams.details), validateMediaDetails, detailsController.getAlternativeTitles);
 module.exports = router;
