@@ -75,10 +75,26 @@ const getSimilar = async (req, res) => {
   if (data) res.json(data);
 };
 
+
+const getAlternativeTitles = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { type = 'movie' } = req.query;
+        const endpoint = type === 'movie' ? `/movie/${id}/alternative_titles` : `/tv/${id}/alternative_titles`;
+        
+        const data = await fetchFromTMDB(endpoint, res);
+        if (data) res.json(data);
+    } catch (error) {
+        console.error('Erro no alternative titles:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+};
+
 module.exports = {
   getDetails,
   getCast,
   getVideos,
   getProviders,
   getSimilar,
+  getAlternativeTitles,
 };
