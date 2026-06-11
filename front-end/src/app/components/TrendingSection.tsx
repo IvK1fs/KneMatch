@@ -28,7 +28,7 @@ export default function TrendingSection() {
   }
 
   return (
-    <section className="py-8">
+    <section className="py-8 overflow-hidden">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl md:text-3xl text-gray-900 dark:text-white">Popular</h2>
@@ -44,11 +44,11 @@ export default function TrendingSection() {
 
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {loading
             ? Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="flex-none w-44 sm:w-48 md:w-56 aspect-[2/3] rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse" />
+                <div key={i} className="flex-none w-36 sm:w-44 md:w-56 aspect-[2/3] rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse" />
               ))
             : items.map((item) => {
                 const title = item.title ?? item.name ?? "Sem título";
@@ -59,7 +59,7 @@ export default function TrendingSection() {
                   <div
                     key={item.id}
                     onClick={() => { window.location.href = `/details/${item.id}?type=${type}`; }}
-                    className="flex-none w-44 sm:w-48 md:w-56 group relative overflow-hidden rounded-lg transition-transform hover:scale-105 cursor-pointer shadow-md dark:shadow-none"
+                    className="flex-none w-36 sm:w-44 md:w-56 group relative overflow-hidden rounded-lg transition-transform hover:scale-105 cursor-pointer shadow-md dark:shadow-none"
                   >
                     <div className="aspect-[2/3] overflow-hidden bg-gray-200 dark:bg-gray-800">
                       <img
