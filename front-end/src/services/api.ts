@@ -1,4 +1,4 @@
-const BASE_URL = (import.meta.env.VITE_API_URL as string) ?? "http://localhost:3001";
+const BASE_URL = (import.meta.env.VITE_API_URL as string) ?? "https://cinematch-back-50kd.onrender.com;
 
 export type MediaType = "movie" | "tv";
 
