@@ -33,12 +33,12 @@ function handleCardClick(item: Title) {
 
 function Skeleton() {
   return (
-    <div className="flex gap-4 bg-white dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-300 dark:border-white/10 h-36 animate-pulse">
-      <div className="w-32 bg-gray-200 dark:bg-gray-800" />
-      <div className="w-40 bg-gray-200 dark:bg-gray-800" />
-      <div className="flex-1 py-6 pr-6 space-y-3">
-        <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
-        <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
+    <div className="flex gap-2 sm:gap-4 bg-white dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-300 dark:border-white/10 h-24 sm:h-36 animate-pulse">
+      <div className="w-12 sm:w-32 bg-gray-200 dark:bg-gray-800 flex-shrink-0" />
+      <div className="w-20 sm:w-40 bg-gray-200 dark:bg-gray-800 flex-shrink-0" />
+      <div className="flex-1 py-3 sm:py-6 pr-3 sm:pr-6 space-y-2 sm:space-y-3">
+        <div className="h-4 sm:h-6 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
+        <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
       </div>
     </div>
   );
@@ -75,25 +75,25 @@ export function TopTenPage() {
     <div className="pt-[73px] min-h-screen bg-white dark:bg-black">
       <section className="relative py-16 bg-gradient-to-b from-yellow-100 dark:from-yellow-900/10 via-white dark:via-black to-white dark:to-black">
         <div className="container mx-auto px-4">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="bg-yellow-500 text-black p-3 rounded-lg">
-              <Trophy className="w-8 h-8" />
+          <div className="flex items-center gap-3 sm:gap-4 mb-4">
+            <div className="bg-yellow-500 text-black p-2 sm:p-3 rounded-lg flex-shrink-0">
+              <Trophy className="w-6 h-6 sm:w-8 sm:h-8" />
             </div>
             <div>
-              <h1 className="text-5xl md:text-6xl text-gray-900 dark:text-white mb-2">Ranking</h1>
-              <div className="flex items-center gap-3">
-                <Badge variant="outline" className="bg-yellow-500/20 border-yellow-500 text-yellow-600 dark:text-yellow-400">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl text-gray-900 dark:text-white mb-1 sm:mb-2">Ranking</h1>
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <Badge variant="outline" className="bg-yellow-500/20 border-yellow-500 text-yellow-600 dark:text-yellow-400 text-xs sm:text-sm">
                   <Calendar className="w-3 h-3 mr-1" />
                   Esta Semana
                 </Badge>
-                <Badge variant="outline" className="bg-gray-200 dark:bg-white/10 border-gray-400 dark:border-white/20 text-gray-900 dark:text-white">
+                <Badge variant="outline" className="bg-gray-200 dark:bg-white/10 border-gray-400 dark:border-white/20 text-gray-900 dark:text-white text-xs sm:text-sm">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   Atualizado diariamente
                 </Badge>
               </div>
             </div>
           </div>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl">
+          <p className="text-sm sm:text-xl text-gray-600 dark:text-gray-400 max-w-3xl">
             Os filmes e séries mais populares da semana, baseados em visualizações,
             avaliações e engajamento da comunidade.
           </p>
@@ -102,21 +102,21 @@ export function TopTenPage() {
 
       <div className="container mx-auto px-4 py-12">
         <Tabs defaultValue="movies" value={selectedTab} onValueChange={setSelectedTab}>
-          <div className="flex justify-center mb-12">
-            <TabsList className="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-white/10 p-1">
+          <div className="flex justify-center mb-8 sm:mb-12">
+            <TabsList className="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-white/10 p-1 w-full sm:w-auto">
               <TabsTrigger
                 value="movies"
-                className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black gap-2 px-8"
+                className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black gap-1 sm:gap-2 px-3 sm:px-8 flex-1 sm:flex-none text-sm sm:text-base"
               >
-                <Film className="w-5 h-5" />
-                Ranking Filmes
+                <Film className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden xs:inline">Ranking </span>Filmes
               </TabsTrigger>
               <TabsTrigger
                 value="series"
-                className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black gap-2 px-8"
+                className="data-[state=active]:bg-yellow-500 data-[state=active]:text-black gap-1 sm:gap-2 px-3 sm:px-8 flex-1 sm:flex-none text-sm sm:text-base"
               >
-                <Tv className="w-5 h-5" />
-                Ranking Séries
+                <Tv className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden xs:inline">Ranking </span>Séries
               </TabsTrigger>
             </TabsList>
           </div>
