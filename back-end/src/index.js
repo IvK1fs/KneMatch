@@ -59,7 +59,10 @@ app.get('/', (req, res) => {
     status: 'online'
   });
 });
-
+app.use((req, res, next) => {
+    console.log(`📝 ${req.method} ${req.originalUrl}`);
+    next();
+});
 // ==================== ROTAS DA API ====================
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
